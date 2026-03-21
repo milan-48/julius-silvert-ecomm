@@ -38,7 +38,7 @@ export function CenterPlateProteinsSection() {
         </div>
 
         <div
-          className="product-rail-scroller -mx-4 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-1 sm:-mx-6 sm:gap-5 sm:px-6 lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-6 lg:overflow-visible lg:pb-0 lg:snap-none"
+          className="product-rail-scroller -mx-4 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-1 sm:-mx-6 sm:gap-5 sm:px-6 lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-6 lg:overflow-visible lg:px-0 lg:pb-0 lg:snap-none"
           role="list"
         >
           {CENTER_PLATE_PRODUCTS.map((p) => (
