@@ -22,7 +22,7 @@ function usePrefersReducedMotion() {
 
 /**
  * Hero carousel — full-bleed image per slide + gradient + copy.
- * Auto-advances; pagination overlaid inside the hero (pause on hover; reduced motion).
+ * Auto-advances; dot pagination in a frosted pill (pause on hover; reduced motion).
  */
 export function Hero() {
   const slides = HOME_HERO_SLIDES;

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Heart, Minus, Plus } from "lucide-react";
 import { getPricingForSize } from "@/lib/productPricing";
 import { RequistionIcon } from "@/lib/icons";
@@ -30,8 +31,10 @@ function clampQty(n) {
 /**
  * Product tile — static data from constants; cart actions are UI-only until checkout exists.
  *
+ * Image area uses a **button + router.push** (not an overlay `Link`) so iOS Safari hit-testing
+ * doesn’t swallow taps meant for CASE/PC and quantity controls below.
+ *
  * @param {Record<string, { price: number; unitPrice: string; netWeight?: string }> | undefined} priceBySize
- *        When set, `selectedSize` picks price / unit line / optional net weight (API-ready shape).
  */
 export function ProductCard({
   slug,
@@ -48,13 +51,12 @@ export function ProductCard({
   defaultSize,
   priceBySize,
 }) {
+  const router = useRouter();
   const [qty, setQty] = useState(1);
-  /** String so users can clear/retype; kept in sync with `qty` when using +/- */
   const [qtyInput, setQtyInput] = useState("1");
   const qtyFieldRef = useRef(null);
   const [wishlisted, setWishlisted] = useState(false);
 
-  /* Block scroll-wheel changing value (needs { passive: false }) */
   useEffect(() => {
     const el = qtyFieldRef.current;
     if (!el) return;
@@ -62,6 +64,7 @@ export function ProductCard({
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
+
   const [selectedSize, setSelectedSize] = useState(
     () => defaultSize ?? sizeOptions?.[0]?.value ?? "case",
   );
@@ -71,7 +74,6 @@ export function ProductCard({
   const placeholderBg = useMemo(() => softPlaceholderBg(slug), [slug]);
   const renderImage = Boolean(imageSrc) && !imageFailed;
   const sizeCount = sizeOptions?.length ?? 0;
-  /* 2–4: equal-width segments (full track). 5+: horizontal scroll so chips don’t crush */
   const sizeOptionsScroll = sizeCount > 4;
 
   function setQtyCommitted(next) {
@@ -94,12 +96,14 @@ export function ProductCard({
   }, [imageSrc]);
 
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-xl border border-neutral-200/90 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
-      <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-neutral-100">
-        <Link
-          href={productHref}
-          className="absolute inset-0 block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+    <article className="flex h-full flex-col overflow-visible rounded-xl border border-neutral-200/90 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
+      {/* z-[1]: media; must stay below the details column for iOS hit-testing */}
+      <div className="relative z-[1] aspect-[4/3] w-full shrink-0 overflow-hidden rounded-t-xl bg-neutral-100">
+        <button
+          type="button"
+          className="absolute inset-0 z-0 flex h-full w-full cursor-pointer touch-manipulation items-stretch justify-stretch border-0 bg-transparent p-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset"
           aria-label={`View ${title}`}
+          onClick={() => router.push(productHref)}
         >
           {!renderImage ? (
             <div
@@ -113,18 +117,21 @@ export function ProductCard({
               src={imageSrc}
               alt={imageAlt}
               fill
-              className="object-cover transition-transform duration-300 hover:scale-[1.02]"
+              className="pointer-events-none object-cover transition-transform duration-300 lg:hover:scale-[1.02]"
               sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
               onError={() => setImageFailed(true)}
             />
           ) : null}
-        </Link>
+        </button>
         <button
           type="button"
-          className="absolute right-2 top-2 flex size-9 items-center justify-center rounded-full bg-white/95 text-neutral-800 shadow-sm ring-1 ring-black/[0.06] transition-colors hover:bg-white focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500"
+          className="absolute right-2 top-2 z-10 flex size-10 touch-manipulation items-center justify-center rounded-full bg-white/95 text-neutral-800 shadow-sm ring-1 ring-black/[0.06] [-webkit-tap-highlight-color:transparent] transition-colors hover:bg-white focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 sm:size-9"
           aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
           aria-pressed={wishlisted}
-          onClick={() => setWishlisted((w) => !w)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setWishlisted((w) => !w);
+          }}
         >
           <Heart
             size={18}
@@ -135,7 +142,8 @@ export function ProductCard({
         </button>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
+      {/* z-[2]: always above image stack on iOS (later sibling + higher z-index) */}
+      <div className="relative z-[2] flex min-h-0 flex-1 flex-col gap-2 rounded-b-xl bg-white p-4">
         <p className="text-xs font-normal uppercase leading-4 tracking-normal text-[#6A7282]">
           {tier}
         </p>
@@ -158,7 +166,7 @@ export function ProductCard({
           <div
             role="radiogroup"
             aria-label="Purchase unit"
-            className="mt-1.5 w-full rounded-[10px] border border-neutral-200/90 bg-neutral-100 p-1"
+            className="mt-1.5 w-full touch-manipulation rounded-[10px] border border-neutral-200/90 bg-neutral-100 p-1"
           >
             <div
               className={
@@ -176,8 +184,11 @@ export function ProductCard({
                     role="radio"
                     aria-checked={selected}
                     title={opt.label}
-                    onClick={() => setSelectedSize(opt.value)}
-                    className={`min-h-10 rounded-lg py-2 text-center text-xs font-semibold uppercase tracking-[0.1em] transition-all focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 ${
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedSize(opt.value);
+                    }}
+                    className={`min-h-11 rounded-lg py-2.5 text-center text-xs font-semibold uppercase tracking-[0.1em] transition-all [-webkit-tap-highlight-color:transparent] focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 sm:min-h-10 sm:py-2 ${
                       sizeOptionsScroll
                         ? "shrink-0 snap-start whitespace-nowrap px-3 sm:px-4"
                         : "min-w-0 flex-1 truncate px-1.5 sm:px-2"
@@ -202,17 +213,24 @@ export function ProductCard({
           <span className="text-xs tabular-nums text-neutral-500">{resolved.unitPrice}</span>
         </div>
 
-        <div className="mt-auto flex min-w-0 items-center gap-2 pt-3">
+        <div className="mt-auto flex min-w-0 touch-manipulation items-center gap-2 pt-3">
           {footerMode === "quantity" ? (
-            <div className="flex h-10 min-w-0 flex-1 items-center justify-between rounded-lg border border-neutral-200 bg-white px-2">
+            <div className="flex h-11 min-h-11 min-w-0 flex-1 items-center justify-between rounded-lg border border-neutral-200 bg-white px-1 sm:h-10 sm:min-h-0 sm:px-2">
               <button
                 type="button"
-                className="flex size-8 shrink-0 items-center justify-center rounded-md text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-900 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-40"
+                className="inline-flex size-11 shrink-0 items-center justify-center rounded-md text-neutral-600 transition-colors [-webkit-tap-highlight-color:transparent] hover:bg-neutral-100 hover:text-neutral-900 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 active:bg-neutral-100 disabled:opacity-40 sm:size-9"
                 aria-label="Decrease quantity"
                 disabled={qty <= QTY_MIN}
-                onClick={() => setQtyCommitted(qty - 1)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setQtyCommitted(qty - 1);
+                }}
               >
-                <Minus size={16} strokeWidth={2} aria-hidden />
+                <Minus
+                  className="size-[18px] sm:size-4"
+                  strokeWidth={2}
+                  aria-hidden
+                />
               </button>
               <input
                 ref={qtyFieldRef}
@@ -242,30 +260,40 @@ export function ProductCard({
                     e.preventDefault();
                   }
                 }}
-                className="min-w-[2rem] max-w-[3.5rem] flex-1 bg-transparent text-center text-sm font-semibold tabular-nums text-neutral-900 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                onClick={(e) => e.stopPropagation()}
+                className="min-h-11 min-w-[2rem] max-w-[3.5rem] flex-1 touch-manipulation bg-transparent text-center text-sm font-semibold tabular-nums text-neutral-900 outline-none [-webkit-tap-highlight-color:transparent] focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 sm:min-h-0"
               />
               <button
                 type="button"
-                className="flex size-8 shrink-0 items-center justify-center rounded-md text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-900 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500"
+                className="inline-flex size-11 shrink-0 items-center justify-center rounded-md text-neutral-600 transition-colors [-webkit-tap-highlight-color:transparent] hover:bg-neutral-100 hover:text-neutral-900 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 active:bg-neutral-100 sm:size-9"
                 aria-label="Increase quantity"
                 disabled={qty >= QTY_MAX}
-                onClick={() => setQtyCommitted(qty + 1)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setQtyCommitted(qty + 1);
+                }}
               >
-                <Plus size={16} strokeWidth={2} aria-hidden />
+                <Plus
+                  className="size-[18px] sm:size-4"
+                  strokeWidth={2}
+                  aria-hidden
+                />
               </button>
             </div>
           ) : (
             <button
               type="button"
-              className="h-10 min-w-0 flex-1 rounded-lg bg-neutral-900 text-sm font-semibold tracking-tight text-white transition-colors hover:bg-neutral-800 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              className="h-11 min-h-11 min-w-0 flex-1 touch-manipulation rounded-lg bg-neutral-900 text-sm font-semibold tracking-tight text-white transition-colors [-webkit-tap-highlight-color:transparent] hover:bg-neutral-800 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 active:bg-neutral-800 sm:h-10 sm:min-h-0"
+              onClick={(e) => e.stopPropagation()}
             >
               ADD
             </button>
           )}
           <button
             type="button"
-            className="flex h-10 w-11 shrink-0 items-center justify-center rounded-lg text-[#6A7282] transition-colors hover:bg-neutral-100/90 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="flex h-11 min-h-11 w-12 shrink-0 touch-manipulation items-center justify-center rounded-lg text-[#6A7282] transition-colors [-webkit-tap-highlight-color:transparent] hover:bg-neutral-100/90 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 active:bg-neutral-100 sm:h-10 sm:min-h-0 sm:w-11"
             aria-label="Add to requisition list"
+            onClick={(e) => e.stopPropagation()}
           >
             <RequistionIcon color="currentColor" width={28} height={28} />
           </button>

@@ -27,6 +27,8 @@ function PromoSlide({ p, active, index }) {
       aria-roledescription="slide"
       aria-label={`${index + 1} of ${HOME_PROMO_BANNERS.length}`}
       aria-hidden={!active}
+      /* iOS: inactive layers must not participate in hit-testing or they block page scroll */
+      inert={active ? undefined : true}
       className={`transition-opacity duration-700 ease-in-out ${
         active
           ? "relative z-10 opacity-100"
@@ -70,13 +72,14 @@ function PromoSlide({ p, active, index }) {
             </Link>
           </div>
 
-          <div className="relative w-full overflow-hidden rounded-2xl bg-black/20 shadow-inner shadow-black/20 lg:rounded-3xl">
+          <div className="pointer-events-none relative w-full overflow-hidden rounded-2xl bg-black/20 shadow-inner shadow-black/20 lg:rounded-3xl">
             <div className="relative aspect-[4/3] w-full sm:aspect-[5/4]">
               <Image
                 src={p.imageSrc}
                 alt={p.imageAlt}
                 fill
-                className="object-cover"
+                draggable={false}
+                className="select-none object-cover"
                 sizes="(max-width: 1024px) 100vw, 50vw"
               />
             </div>
@@ -113,7 +116,7 @@ export function PromoBannersCarousel() {
 
   return (
     <section
-      className="bg-white pt-4 pb-10 sm:pt-6 sm:pb-14 lg:pt-8 lg:pb-16"
+      className="touch-pan-y bg-white pt-4 pb-10 sm:pt-6 sm:pb-14 lg:pt-8 lg:pb-16"
       aria-labelledby="promo-banners-heading"
       aria-roledescription="carousel"
       aria-label="Featured programs"
