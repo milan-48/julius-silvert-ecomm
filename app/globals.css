@@ -378,6 +378,16 @@ body {
   color: var(--text-primary);
 }
 
+/* Category carousel — hide scrollbar, keep swipe */
+.category-carousel-scroller {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.category-carousel-scroller::-webkit-scrollbar {
+  display: none;
+}
+
 .nav-link-premium--mega-active::after {
   content: "";
   position: absolute;

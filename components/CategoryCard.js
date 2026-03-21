@@ -1,21 +1,18 @@
 import Link from "next/link";
 
 /**
- * @param {object} props
- * @param {string} props.name - Category name (e.g. "Beef")
- * @param {number} props.count - Number of items
- * @param {string} props.slug - URL slug for linking
+ * Shop category tile — full border, static shadow (no motion; avoids carousel clip).
  */
 export function CategoryCard({ name, count, slug }) {
   return (
     <Link
-      href={`#/${slug}`}
-      className="group flex flex-col items-center justify-center py-10 px-6 bg-white rounded-lg border border-[#e5e7eb] shadow-sm hover:shadow transition-all duration-200"
+      href={`/${slug}`}
+      className="flex h-full min-h-[128px] w-full flex-col items-center justify-center rounded-2xl border border-[#E5E7EB] bg-white px-4 py-6 shadow-sm hover:border-neutral-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-400 sm:min-h-[140px] sm:px-5 sm:py-7"
     >
-      <span className="font-bold text-[#000000] text-xl mb-1.5 group-hover:text-[#B91C1C] transition-colors">
+      <span className="flex min-h-0 flex-1 items-center justify-center text-balance text-center text-base font-medium leading-snug tracking-tight text-neutral-900 sm:text-[1.125rem] sm:leading-tight">
         {name}
       </span>
-      <span className="text-sm text-[#6b7280] font-normal">
+      <span className="mt-3 shrink-0 text-sm tabular-nums leading-normal text-neutral-600">
         {count} items
       </span>
     </Link>
