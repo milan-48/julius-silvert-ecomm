@@ -68,12 +68,12 @@ export function Header({
   const closeMobileNav = onMobileNavClose ?? (() => {});
 
   return (
-    <header className="sticky top-0 z-50 bg-white shadow-[0_1px_0_rgba(15,23,42,0.04)]">
-      <div className="site-container">
-        <div className="flex items-center justify-between gap-3 py-3.5 sm:gap-6 sm:py-4">
+    <header className="sticky top-0 z-50 max-w-full bg-white shadow-[0_1px_0_rgba(15,23,42,0.04)]">
+      <div className="site-container max-w-full">
+        <div className="flex min-w-0 items-center justify-between gap-2 py-3 sm:gap-6 sm:py-4">
           <Link
             href="/"
-            className="shrink-0 transition-opacity duration-200 hover:opacity-85"
+            className="flex min-w-0 shrink items-center leading-none transition-opacity duration-200 hover:opacity-85"
             aria-label="Julius Silvert - Home"
           >
             <Image
@@ -81,7 +81,7 @@ export function Header({
               alt="Julius Silvert"
               width={LOGO_W}
               height={LOGO_H}
-              className="h-10 w-auto sm:h-[46px] sm:w-auto"
+              className="block h-9 w-auto max-w-[min(124px,36vw)] object-contain object-left sm:h-[46px] sm:max-w-none sm:w-auto"
               priority
               unoptimized
             />
@@ -93,7 +93,7 @@ export function Header({
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
+          <div className="flex shrink-0 items-center justify-end gap-0 sm:gap-1">
             <Link href="#" className="icon-hit" aria-label="Wishlist">
               <Heart
                 size={ICON_PX}
@@ -148,8 +148,8 @@ export function Header({
           </div>
         </div>
 
-        <div className="pb-3.5 sm:hidden">
-          <SearchBar />
+        <div className="min-w-0 pb-3 sm:hidden">
+          <SearchBar className="min-w-0" />
         </div>
 
         <nav

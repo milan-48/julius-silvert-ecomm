@@ -13,6 +13,12 @@ export const metadata = {
     "Premium cuts and quality meats delivered to your door. Est. 1915.",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>

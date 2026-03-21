@@ -12,7 +12,7 @@ import { HERO } from "@/lib/constants";
 export function Hero() {
   return (
     <section
-      className="relative flex min-h-[420px] items-center sm:min-h-[500px] md:min-h-[580px] lg:min-h-[640px]"
+      className="relative flex min-h-[420px] max-w-full items-center overflow-hidden sm:min-h-[500px] md:min-h-[580px] lg:min-h-[640px]"
       aria-labelledby="hero-headline"
     >
       <div className="absolute inset-0 bg-[#0d1117]">

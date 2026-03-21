@@ -2,7 +2,11 @@ import { Search } from "lucide-react";
 
 export function SearchBar({ className = "" }) {
   return (
-    <form role="search" className={`relative flex w-full ${className}`} action="#">
+    <form
+      role="search"
+      className={`relative flex w-full min-w-0 max-w-full ${className}`}
+      action="#"
+    >
       <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400">
         <Search size={20} strokeWidth={1.75} className="shrink-0" aria-hidden />
       </span>

@@ -10,7 +10,7 @@ export default function Home() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="flex min-h-screen max-w-full flex-col overflow-x-clip bg-white">
       <AnnouncementBar />
       <Header
         mobileNavOpen={mobileNavOpen}

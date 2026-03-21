@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { CategoryCard } from "./CategoryCard";
 
 function getItemsPerView(width) {
@@ -23,16 +30,15 @@ function chunkCategories(items, size) {
  */
 export function CategoryCarousel({ categories }) {
   const scrollerRef = useRef(null);
-  const [itemsPerView, setItemsPerView] = useState(6);
+  /* Mobile-first: default 2 — avoids SSR + first paint showing 6 squeezed columns on iPhone */
+  const [itemsPerView, setItemsPerView] = useState(2);
   const [page, setPage] = useState(0);
 
-  useEffect(() => {
-    const onResize = () => {
-      setItemsPerView(getItemsPerView(window.innerWidth));
-    };
-    onResize();
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+  useLayoutEffect(() => {
+    const update = () => setItemsPerView(getItemsPerView(window.innerWidth));
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
   }, []);
 
   const pages = useMemo(
@@ -88,19 +94,19 @@ export function CategoryCarousel({ categories }) {
   }, [onScroll]);
 
   return (
-    <div className="w-full">
+    <div className="w-full min-w-0 max-w-full">
       {/* Vertical padding so card borders/shadows aren’t clipped by the horizontal scroller */}
       <div
         ref={scrollerRef}
-        className="category-carousel-scroller flex snap-x snap-mandatory overflow-x-auto py-2 sm:py-3"
+        className="category-carousel-scroller flex w-full min-w-0 max-w-full snap-x snap-mandatory overflow-x-auto py-3 sm:py-3"
         aria-label="Shop by category"
       >
         {pages.map((chunk, pageIndex) => (
           <div
             key={pageIndex}
-            className="w-full min-w-full shrink-0 snap-start snap-always px-0.5"
+            className="box-border max-w-full shrink-0 snap-start snap-always px-0.5 [flex:0_0_100%] [width:100%]"
           >
-            <div className="flex items-stretch gap-3 sm:gap-4 lg:gap-5">
+            <div className="flex min-w-0 max-w-full items-stretch gap-2.5 sm:gap-4 lg:gap-5">
               {chunk.map((category) => (
                 <div
                   key={category.slug}
@@ -120,7 +126,7 @@ export function CategoryCarousel({ categories }) {
 
       {pageCount > 1 ? (
         <div
-          className="mt-6 flex items-center justify-center gap-2"
+          className="mt-6 flex w-full min-w-0 items-center justify-center gap-2 px-1"
           role="tablist"
           aria-label="Category pages"
         >

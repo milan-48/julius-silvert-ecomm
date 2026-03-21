@@ -4,11 +4,11 @@ import { ANNOUNCEMENT } from "@/lib/constants";
 export function AnnouncementBar() {
   return (
     <div
-      className="py-2.5"
+      className="hidden py-2 sm:block sm:py-2.5"
       style={{ backgroundColor: "var(--surface-announcement)" }}
     >
-      <div className="site-container flex flex-wrap items-center justify-between gap-2">
-        <p className="text-announcement text-center sm:text-left">
+      <div className="site-container flex max-w-full flex-col items-center gap-1.5 text-center sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-2 sm:text-left">
+        <p className="text-announcement max-w-full">
           {ANNOUNCEMENT.greeting} - Let us know if you need{" "}
           <Link
             href={ANNOUNCEMENT.helpLink}
@@ -21,7 +21,7 @@ export function AnnouncementBar() {
         </p>
         <Link
           href={ANNOUNCEMENT.orderGuideLink}
-          className="text-announcement whitespace-nowrap transition-opacity hover:opacity-90"
+          className="text-announcement shrink-0 whitespace-nowrap transition-opacity hover:opacity-90"
           style={{ color: "var(--text-inverse)" }}
         >
           My Order Guide

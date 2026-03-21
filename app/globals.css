@@ -86,7 +86,13 @@
 }
 
 /* --- Base --- */
+html {
+  overflow-x: clip;
+}
+
 body {
+  max-width: 100%;
+  overflow-x: clip;
   background: var(--surface-primary);
   color: var(--text-primary);
   font-family: var(--font-sans);
@@ -127,14 +133,14 @@ body {
   color: var(--text-placeholder);
 }
 
-/* Layout shell — consistent horizontal padding */
+/* Layout shell — consistent horizontal padding (+ safe area on phones) */
 .site-container {
   width: 100%;
   max-width: var(--container-max, 1600px);
   margin-left: auto;
   margin-right: auto;
-  padding-left: clamp(1rem, 4vw, 2.5rem);
-  padding-right: clamp(1rem, 4vw, 2.5rem);
+  padding-left: max(clamp(0.875rem, 3.5vw, 2.5rem), env(safe-area-inset-left, 0px));
+  padding-right: max(clamp(0.875rem, 3.5vw, 2.5rem), env(safe-area-inset-right, 0px));
 }
 
 /*
@@ -185,6 +191,14 @@ body {
 .icon-hit:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--text-primary) 25%, transparent);
   outline-offset: 2px;
+}
+
+/* Narrow phones: logo + 4 icons must fit ~320px — slightly smaller hit targets */
+@media (max-width: 639px) {
+  .icon-hit {
+    height: 2.375rem;
+    width: 2.375rem;
+  }
 }
 
 /* Inline SVG as block avoids subpixel baseline blur (common “PNG” look) */
@@ -382,6 +396,9 @@ body {
 .category-carousel-scroller {
   -ms-overflow-style: none;
   scrollbar-width: none;
+  /* iOS Safari: momentum scroll + contain overscroll; reduces snap/layout glitches */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 
 .category-carousel-scroller::-webkit-scrollbar {
