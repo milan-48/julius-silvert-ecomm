@@ -9,6 +9,7 @@ import { getPricingForSize } from "@/lib/productPricing";
 import { addToCartWithNotification } from "@/lib/store/cartThunks";
 import { decrementCartLine, incrementCartLine } from "@/lib/store/cartSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
+import { CartQuantityInput } from "@/components/CartQuantityInput";
 import { RequistionIcon } from "@/lib/icons";
 import { softPlaceholderBg } from "@/lib/softPlaceholderColor";
 
@@ -233,9 +234,11 @@ export function ProductCard({
               >
                 <Minus className="size-4" strokeWidth={2} aria-hidden />
               </button>
-              <span className="min-w-[2rem] flex-1 text-center text-sm font-bold tabular-nums text-neutral-900">
-                {cartLine.quantity}
-              </span>
+              <CartQuantityInput
+                lineId={cartLine.lineId}
+                quantity={cartLine.quantity}
+                className="min-w-[2rem] max-w-[3rem] flex-1 border-0 bg-transparent p-0 text-center text-sm font-bold tabular-nums text-neutral-900 outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+              />
               <button
                 type="button"
                 className="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-neutral-600 transition-colors [-webkit-tap-highlight-color:transparent] hover:bg-neutral-100 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-40"

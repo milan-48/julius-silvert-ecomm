@@ -11,6 +11,7 @@ import { softPlaceholderBg } from "@/lib/softPlaceholderColor";
 import { addToCartWithNotification } from "@/lib/store/cartThunks";
 import { decrementCartLine, incrementCartLine } from "@/lib/store/cartSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
+import { CartQuantityInput } from "@/components/CartQuantityInput";
 import { YouMayAlsoLike } from "./YouMayAlsoLike";
 
 const ICON_STROKE = 1.75;
@@ -360,9 +361,11 @@ export function ProductDetailPage({ product }) {
                   >
                     <Minus className="size-4" strokeWidth={2} aria-hidden />
                   </button>
-                  <span className="min-w-[2.5rem] flex-1 text-center text-sm font-bold tabular-nums text-neutral-900">
-                    {cartLine.quantity}
-                  </span>
+                  <CartQuantityInput
+                    lineId={cartLine.lineId}
+                    quantity={cartLine.quantity}
+                    className="min-w-[2.5rem] max-w-[3rem] flex-1 border-0 bg-transparent p-0 text-center text-sm font-bold tabular-nums text-neutral-900 outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                  />
                   <button
                     type="button"
                     className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-neutral-600 transition-colors hover:bg-neutral-100 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-40"
