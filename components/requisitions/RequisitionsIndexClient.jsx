@@ -1,11 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MoreHorizontal, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { ConfirmModal } from "./ConfirmModal";
 import { CreateRequisitionListModal } from "./CreateRequisitionListModal";
+
+const REQ_MENU_MIN_W = 160;
+const REQ_MENU_GAP = 6;
+const REQ_MENU_EST_H = 96;
 
 function formatActivity(iso) {
   try {
@@ -25,6 +37,13 @@ export function RequisitionsIndexClient() {
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [menuOpenId, setMenuOpenId] = useState(/** @type {string | null} */ (null));
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const menuPanelRef = useRef(/** @type {HTMLDivElement | null} */ (null));
+  const [mounted, setMounted] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(
+    /** @type {{ id: string; name: string } | null} */ (null),
+  );
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -48,21 +67,63 @@ export function RequisitionsIndexClient() {
   }, [refresh]);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const updateMenuPosition = useCallback(() => {
+    if (!menuOpenId) return;
+    const trigger = document.querySelector(
+      `[data-req-menu-trigger="${CSS.escape(menuOpenId)}"]`,
+    );
+    if (!(trigger instanceof HTMLElement)) return;
+    const r = trigger.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    let left = r.right - REQ_MENU_MIN_W;
+    left = Math.max(8, Math.min(left, vw - REQ_MENU_MIN_W - 8));
+    let top = r.bottom + REQ_MENU_GAP;
+    if (top + REQ_MENU_EST_H > vh - 8) {
+      top = Math.max(8, r.top - REQ_MENU_EST_H - REQ_MENU_GAP);
+    }
+    setMenuPos({ top, left });
+  }, [menuOpenId]);
+
+  useLayoutEffect(() => {
+    if (!menuOpenId) return;
+    updateMenuPosition();
+    window.addEventListener("scroll", updateMenuPosition, true);
+    window.addEventListener("resize", updateMenuPosition);
+    return () => {
+      window.removeEventListener("scroll", updateMenuPosition, true);
+      window.removeEventListener("resize", updateMenuPosition);
+    };
+  }, [menuOpenId, updateMenuPosition]);
+
+  useEffect(() => {
     if (!menuOpenId) return;
     const onPointerDown = (e) => {
       const t = e.target;
       if (!(t instanceof Node)) return;
-      const wrap = document.querySelector(`[data-req-menu-root="${menuOpenId}"]`);
+      const wrap = document.querySelector(
+        `[data-req-menu-root="${CSS.escape(menuOpenId)}"]`,
+      );
       if (wrap?.contains(t)) return;
+      if (menuPanelRef.current?.contains(t)) return;
       setMenuOpenId(null);
     };
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [menuOpenId]);
 
-  async function deleteList(id, name) {
+  function openDeleteConfirm(id, name) {
     setMenuOpenId(null);
-    if (!window.confirm(`Delete “${name}”? This cannot be undone.`)) return;
+    setDeleteTarget({ id, name });
+  }
+
+  async function confirmDeleteList() {
+    if (!deleteTarget) return;
+    const { id } = deleteTarget;
+    setDeleteLoading(true);
     try {
       const r = await fetch("/api/requisitions", {
         method: "POST",
@@ -76,9 +137,12 @@ export function RequisitionsIndexClient() {
         return;
       }
       setLists(d.lists ?? []);
+      setDeleteTarget(null);
       toast.success("List deleted");
     } catch {
       toast.error("Could not delete list");
+    } finally {
+      setDeleteLoading(false);
     }
   }
 
@@ -105,7 +169,7 @@ export function RequisitionsIndexClient() {
           </button>
         </div>
 
-        <div className="mt-10 overflow-hidden rounded-2xl border border-neutral-200/90 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
+        <div className="mt-10 rounded-2xl border border-neutral-200/90 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
           {loading ? (
             <p className="px-6 py-12 text-center text-sm text-neutral-500">
               Loading lists…
@@ -183,9 +247,11 @@ export function RequisitionsIndexClient() {
                         >
                           <button
                             type="button"
+                            data-req-menu-trigger={list.id}
                             className="inline-flex size-9 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-800"
                             aria-label={`Actions for ${list.name}`}
                             aria-expanded={menuOpenId === list.id}
+                            aria-haspopup="menu"
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
@@ -194,33 +260,6 @@ export function RequisitionsIndexClient() {
                           >
                             <MoreHorizontal className="size-5" strokeWidth={2} aria-hidden />
                           </button>
-                          {menuOpenId === list.id ? (
-                            <div
-                              role="menu"
-                              className="absolute right-2 top-full z-20 mt-1 min-w-[10rem] rounded-xl border border-neutral-200 bg-white py-1 shadow-lg ring-1 ring-black/5"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <button
-                                type="button"
-                                role="menuitem"
-                                className="block w-full px-4 py-2.5 text-left text-sm text-neutral-700 hover:bg-neutral-50"
-                                onClick={() => {
-                                  setMenuOpenId(null);
-                                  router.push(`/requisitions/${list.id}`);
-                                }}
-                              >
-                                Open
-                              </button>
-                              <button
-                                type="button"
-                                role="menuitem"
-                                className="block w-full px-4 py-2.5 text-left text-sm text-rose-700 hover:bg-rose-50"
-                                onClick={() => void deleteList(list.id, list.name)}
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          ) : null}
                         </td>
                       </tr>
                     );
@@ -246,6 +285,68 @@ export function RequisitionsIndexClient() {
         onClose={() => setCreateOpen(false)}
         onCreated={() => void refresh()}
       />
+
+      <ConfirmModal
+        open={!!deleteTarget}
+        onClose={() => {
+          if (!deleteLoading) setDeleteTarget(null);
+        }}
+        title="Delete this list?"
+        description={
+          deleteTarget
+            ? `“${deleteTarget.name}” will be removed. This cannot be undone.`
+            : undefined
+        }
+        confirmLabel="Delete list"
+        cancelLabel="Cancel"
+        variant="danger"
+        loading={deleteLoading}
+        onConfirm={confirmDeleteList}
+      />
+
+      {mounted && menuOpenId
+        ? createPortal(
+            <div
+              ref={menuPanelRef}
+              role="menu"
+              style={{
+                position: "fixed",
+                top: menuPos.top,
+                left: menuPos.left,
+                minWidth: REQ_MENU_MIN_W,
+                zIndex: 200,
+              }}
+              className="rounded-xl border border-neutral-200/95 bg-white py-1 shadow-[0_12px_40px_rgba(15,23,42,0.14)] ring-1 ring-black/[0.06]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                role="menuitem"
+                className="block w-full px-4 py-2.5 text-left text-sm text-neutral-700 transition-colors hover:bg-neutral-50"
+                onClick={() => {
+                  const id = menuOpenId;
+                  setMenuOpenId(null);
+                  router.push(`/requisitions/${id}`);
+                }}
+              >
+                Open
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="block w-full px-4 py-2.5 text-left text-sm text-rose-700 transition-colors hover:bg-rose-50"
+                onClick={() => {
+                  const list = lists.find((l) => l.id === menuOpenId);
+                  if (list) openDeleteConfirm(list.id, list.name);
+                  else setMenuOpenId(null);
+                }}
+              >
+                Delete
+              </button>
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }

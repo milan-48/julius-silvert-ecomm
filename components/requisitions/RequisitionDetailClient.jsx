@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Minus, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { ConfirmModal } from "./ConfirmModal";
 import {
   availableUnitsForPurchase,
   coerceListingStock,
@@ -173,6 +174,8 @@ export function RequisitionDetailClient({ listId }) {
   const [qtyByKey, setQtyByKey] = useState(/** @type {Record<string, number>} */ ({}));
   const [qtyBusy, setQtyBusy] = useState(/** @type {Record<string, boolean>} */ ({}));
   const [addCartBusy, setAddCartBusy] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const selectAllRef = useRef(/** @type {HTMLInputElement | null} */ (null));
 
@@ -440,6 +443,28 @@ export function RequisitionDetailClient({ listId }) {
     }
   }
 
+  async function confirmDeleteList() {
+    if (!list) return;
+    setDeleteLoading(true);
+    try {
+      const r = await fetch("/api/requisitions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "deleteList", listId: list.id }),
+        cache: "no-store",
+      });
+      if (!r.ok) {
+        toast.error("Could not delete");
+        return;
+      }
+      setDeleteConfirmOpen(false);
+      toast.success("List deleted");
+      router.push("/requisitions");
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
+
   if (loading && !list) {
     return (
       <main className="site-container py-10 sm:py-14">
@@ -466,6 +491,7 @@ export function RequisitionDetailClient({ listId }) {
   }
 
   return (
+    <>
     <main className="site-container py-10 sm:py-14">
       <nav className="text-xs font-medium text-neutral-500">
         <Link href="/requisitions" className="hover:text-neutral-800 hover:underline">
@@ -500,21 +526,7 @@ export function RequisitionDetailClient({ listId }) {
           <button
             type="button"
             className="inline-flex h-10 items-center justify-center rounded-lg border border-rose-200/80 bg-white px-4 text-sm font-medium text-rose-800 transition-colors hover:bg-rose-50"
-            onClick={async () => {
-              if (!window.confirm(`Delete “${list.name}”?`)) return;
-              const r = await fetch("/api/requisitions", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "deleteList", listId: list.id }),
-                cache: "no-store",
-              });
-              if (!r.ok) {
-                toast.error("Could not delete");
-                return;
-              }
-              toast.success("List deleted");
-              router.push("/requisitions");
-            }}
+            onClick={() => setDeleteConfirmOpen(true)}
           >
             Delete list
           </button>
@@ -711,5 +723,20 @@ export function RequisitionDetailClient({ listId }) {
         </>
       )}
     </main>
+
+    <ConfirmModal
+      open={deleteConfirmOpen}
+      onClose={() => {
+        if (!deleteLoading) setDeleteConfirmOpen(false);
+      }}
+      title="Delete this list?"
+      description={`“${list.name}” will be removed. This cannot be undone.`}
+      confirmLabel="Delete list"
+      cancelLabel="Cancel"
+      variant="danger"
+      loading={deleteLoading}
+      onConfirm={confirmDeleteList}
+    />
+    </>
   );
 }
