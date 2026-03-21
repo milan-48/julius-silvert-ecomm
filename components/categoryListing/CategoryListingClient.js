@@ -23,7 +23,7 @@ export function CategoryListingClient({ products }) {
   const [isPending, startTransition] = useTransition();
   const showListingLoad = useMinimumPending(isPending, 280);
 
-  const [sortBy, setSortBy] = useState("random");
+  const [sortBy, setSortBy] = useState("sku-asc");
   const [selectedBrands, setSelectedBrands] = useState(
     () => new Set(/** @type {string[]} */ ([])),
   );
@@ -77,6 +77,14 @@ export function CategoryListingClient({ products }) {
   const sortedProducts = useMemo(() => {
     const list = [...filteredProducts];
     switch (sortBy) {
+      case "sku-asc":
+        return list.sort((a, b) =>
+          String(a.sku ?? a.slug ?? "").localeCompare(
+            String(b.sku ?? b.slug ?? ""),
+            undefined,
+            { numeric: true, sensitivity: "base" },
+          ),
+        );
       case "price-asc":
         return list.sort((a, b) => a.price - b.price);
       case "price-desc":
