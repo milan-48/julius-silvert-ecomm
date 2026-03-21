@@ -1,13 +1,11 @@
 import Link from "next/link";
+import { CategoryListingPage } from "@/components/categoryListing/CategoryListingPage";
+import {
+  findCategoryBySlug,
+  getCategoryListingProductPool,
+} from "@/lib/constants";
 
-/**
- * Placeholder for catalog routes linked from the mega-menu.
- * Replace with real segment pages or delete this file once routes exist.
- */
-export default async function CatalogPlaceholderPage({ params }) {
-  const { slug } = await params;
-  const path = Array.isArray(slug) ? slug.join("/") : String(slug ?? "");
-
+function CatalogPlaceholder({ path }) {
   return (
     <div className="bg-white">
       <div className="site-container py-16 sm:py-24">
@@ -30,4 +28,20 @@ export default async function CatalogPlaceholderPage({ params }) {
       </div>
     </div>
   );
+}
+
+export default async function CatalogRoutePage({ params }) {
+  const { slug } = await params;
+  const parts = Array.isArray(slug) ? slug : slug != null ? [String(slug)] : [];
+
+  if (parts.length === 1) {
+    const category = findCategoryBySlug(parts[0]);
+    if (category) {
+      const products = getCategoryListingProductPool();
+      return <CategoryListingPage category={category} products={products} />;
+    }
+  }
+
+  const path = parts.join("/");
+  return <CatalogPlaceholder path={path} />;
 }
