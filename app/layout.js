@@ -12,6 +12,11 @@ export const metadata = {
   title: "Julius Silvert | Premium Meats & Seasonal Produce",
   description:
     "Premium cuts and quality meats delivered to your door. Est. 1915.",
+  icons: {
+    icon: [{ url: "/favicon.png", type: "image/png" }],
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
 };
 
 export const viewport = {

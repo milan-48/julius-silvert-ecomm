@@ -34,6 +34,13 @@
   --container-max: 1600px;
   --container-padding: 1rem;
 
+  /* Scrollbars — global (Firefox + WebKit); slim rail */
+  --scrollbar-size: 6px;
+  --scrollbar-track: #e4e7ee;
+  --scrollbar-thumb: #7a8496;
+  --scrollbar-thumb-hover: #5c6575;
+  --scrollbar-thumb-active: #4a5260;
+
   /* Icon colors */
   --icon-primary: #0a0a0a;
   --icon-secondary: #6b7280;
@@ -76,6 +83,11 @@
   --icon-placeholder: #71717a;
   --border-light: #27272a;
   --border-medium: #3f3f46;
+
+  --scrollbar-track: #141414;
+  --scrollbar-thumb: #5a5f68;
+  --scrollbar-thumb-hover: #767b86;
+  --scrollbar-thumb-active: #8b9099;
 }
 
 /* --- Tailwind theme extension --- */
@@ -99,6 +111,61 @@ body {
   font-size: var(--text-base);
   line-height: var(--text-base-line);
   -webkit-font-smoothing: antialiased;
+}
+
+/* --- Global scrollbars (thin rail, light depth + brand hover) --- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+*::-webkit-scrollbar-track {
+  margin-block: 2px;
+  margin-inline: 1px;
+  background: var(--scrollbar-track);
+  border-radius: 9999px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text-primary) 5%, transparent);
+}
+
+*::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  border: 1px solid var(--scrollbar-track);
+  background-clip: padding-box;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--scrollbar-thumb) 90%, #ffffff 10%) 0%,
+    var(--scrollbar-thumb) 50%,
+    color-mix(in srgb, var(--scrollbar-thumb) 88%, #000000 12%) 100%
+  );
+  box-shadow: 0 0 1px color-mix(in srgb, var(--text-primary) 10%, transparent);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  border: 1px solid var(--scrollbar-track);
+  background-clip: padding-box;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--scrollbar-thumb-hover) 78%, var(--accent-primary) 6%) 0%,
+    var(--scrollbar-thumb-hover) 50%,
+    color-mix(in srgb, var(--scrollbar-thumb-hover) 85%, #000000 15%) 100%
+  );
+  box-shadow: 0 0 2px color-mix(in srgb, var(--text-primary) 14%, transparent);
+}
+
+*::-webkit-scrollbar-thumb:active {
+  border: 1px solid var(--scrollbar-track);
+  background-clip: padding-box;
+  background: var(--scrollbar-thumb-active);
+  box-shadow: inset 0 1px 1px color-mix(in srgb, #000000 20%, transparent);
+}
+
+*::-webkit-scrollbar-corner {
+  background: var(--scrollbar-track);
 }
 
 /* Pointer on real interactives (Tailwind preflight leaves buttons as default on some setups) */
