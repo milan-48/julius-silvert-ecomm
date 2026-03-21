@@ -12,6 +12,8 @@ export function CartQuantityInput({
   quantity,
   className = "",
   onClick,
+  /** When true, quantity cannot be typed up (e.g. shelf is 0 — use − only). */
+  readOnly = false,
 }) {
   const dispatch = useAppDispatch();
   const [draft, setDraft] = useState(() => String(quantity));
@@ -21,6 +23,7 @@ export function CartQuantityInput({
   }, [quantity, lineId]);
 
   function commit() {
+    if (readOnly) return;
     const raw = draft.trim();
     const n = parseInt(raw, 10);
     const q =
@@ -35,9 +38,11 @@ export function CartQuantityInput({
       inputMode="numeric"
       autoComplete="off"
       aria-label="Quantity"
-      className={className}
+      readOnly={readOnly}
+      className={`${className}${readOnly ? " cursor-default" : ""}`.trim()}
       value={draft}
       onChange={(e) => {
+        if (readOnly) return;
         const digits = e.target.value.replace(/\D/g, "").slice(0, 2);
         setDraft(digits);
       }}

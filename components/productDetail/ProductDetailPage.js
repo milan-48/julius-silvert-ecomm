@@ -7,7 +7,10 @@ import { Heart, Minus, Plus, Star } from "lucide-react";
 import { LOW_STOCK_THRESHOLD } from "@/lib/memoryDb/stockUtils";
 import { getRelatedProductsForSlug } from "@/lib/productCatalog";
 import { getPricingForSize } from "@/lib/productPricing";
-import { availableUnitsForPurchase } from "@/lib/productStock";
+import {
+  availableUnitsForPurchase,
+  stockStatusForPurchaseChannel,
+} from "@/lib/productStock";
 import { RequistionIcon } from "@/lib/icons";
 import { softPlaceholderBg } from "@/lib/softPlaceholderColor";
 import { addToCartWithNotification } from "@/lib/store/cartThunks";
@@ -134,11 +137,21 @@ export function ProductDetailPage({ product }) {
     () => availableUnitsForPurchase(stock, purchaseSizeKey),
     [stock, purchaseSizeKey],
   );
-  const lineOutOfStock = Number.isFinite(maxShelfUnits) && maxShelfUnits <= 0;
+  const hasFiniteShelf = Number.isFinite(maxShelfUnits);
+  const channelStockStatus = useMemo(
+    () => stockStatusForPurchaseChannel(p.stockStatus, purchaseSizeKey),
+    [p.stockStatus, purchaseSizeKey],
+  );
+  const lineOutOfStock =
+    channelStockStatus === "out_of_stock" ||
+    (hasFiniteShelf && maxShelfUnits <= 0);
   const lineLowStock =
-    Number.isFinite(maxShelfUnits) &&
+    !lineOutOfStock &&
+    hasFiniteShelf &&
     maxShelfUnits > 0 &&
-    maxShelfUnits <= LOW_STOCK_THRESHOLD;
+    (channelStockStatus === "low_stock" ||
+      (channelStockStatus == null &&
+        maxShelfUnits <= LOW_STOCK_THRESHOLD));
   const atShelfCap =
     Number.isFinite(maxShelfUnits) &&
     Boolean(cartLine) &&
@@ -239,6 +252,19 @@ export function ProductDetailPage({ product }) {
                   aria-hidden
                 />
               </button>
+              {lineOutOfStock || lineLowStock ? (
+                <div className="pointer-events-none absolute bottom-3 left-3 z-10 max-w-[calc(100%-1.5rem)]">
+                  {lineOutOfStock ? (
+                    <span className="inline-flex items-center rounded-md border border-amber-200/35 bg-gradient-to-br from-[#0c0a09] via-[#1c1917] to-[#292524] px-2.5 py-1.5 text-[10px] font-semibold uppercase leading-tight tracking-[0.2em] text-amber-50 shadow-[0_10px_28px_rgba(0,0,0,0.4)] ring-1 ring-white/10">
+                      Out of stock
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center rounded-md border border-amber-400/45 bg-gradient-to-br from-[#422006] via-[#1c1917] to-[#0c0a09] px-2.5 py-1.5 text-[10px] font-semibold uppercase leading-tight tracking-[0.18em] text-amber-100 shadow-[0_10px_28px_rgba(0,0,0,0.35)] ring-1 ring-amber-500/25">
+                      Limited stock
+                    </span>
+                  )}
+                </div>
+              ) : null}
             </div>
             <div className="flex gap-2 overflow-x-auto pb-1 sm:gap-3">
               {galleryImages.map((src, i) => {
@@ -341,6 +367,21 @@ export function ProductDetailPage({ product }) {
                 </span>
               </div>
               <p className="mt-1 text-sm text-neutral-500">{resolved.netWeight}</p>
+              {lineOutOfStock ? (
+                <p className="mt-2 text-sm font-semibold text-red-600" role="status">
+                  This unit can’t be added to your cart right now.
+                </p>
+              ) : hasFiniteShelf && lineLowStock ? (
+                <p className="mt-2 text-sm font-medium text-amber-800" role="status">
+                  Low stock — only {maxShelfUnits}{" "}
+                  {purchaseSizeKey === "case"
+                    ? "case(s)"
+                    : purchaseSizeKey === "pc"
+                      ? "PC(s)"
+                      : "unit(s)"}{" "}
+                  left
+                </p>
+              ) : null}
             </div>
 
             {showSizePicker ? (
@@ -390,6 +431,7 @@ export function ProductDetailPage({ product }) {
                   <CartQuantityInput
                     lineId={cartLine.lineId}
                     quantity={cartLine.quantity}
+                    readOnly={lineOutOfStock}
                     className="min-w-[2.5rem] max-w-[3rem] flex-1 border-0 bg-transparent p-0 text-center text-sm font-bold tabular-nums text-neutral-900 outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                   />
                   <button
@@ -414,7 +456,8 @@ export function ProductDetailPage({ product }) {
               )}
               <button
                 type="button"
-                className="flex h-12 min-h-12 w-14 shrink-0 items-center justify-center rounded-lg border border-neutral-200 text-neutral-600 transition-colors hover:bg-neutral-50 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500"
+                disabled={lineOutOfStock}
+                className="flex h-12 min-h-12 w-14 shrink-0 items-center justify-center rounded-lg border border-neutral-200 text-neutral-600 transition-colors hover:bg-neutral-50 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="Add to requisition list"
               >
                 <RequistionIcon color="currentColor" width={28} height={28} />

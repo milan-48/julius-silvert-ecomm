@@ -158,6 +158,10 @@ export function CategoryListingClient({ products }) {
                       sizeOptions={p.sizeOptions}
                       defaultSize={p.defaultSize}
                       stock={p.stock}
+                      stockStatus={p.stockStatus}
+                      stockCase={p.stockCase}
+                      stockPc={p.stockPc}
+                      stockSingle={p.stockSingle}
                     />
                   </li>
                 ))}

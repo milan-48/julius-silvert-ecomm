@@ -10,6 +10,9 @@ import { listProductsByCategory } from "@/lib/memoryDb/queries";
 import { withStockView } from "@/lib/memoryDb/stockUtils";
 import { getProductDetailBySlug } from "@/lib/productCatalog";
 
+/** Same as home — catalog reads live memory DB (stock count updates must reflect on PLP/PDP). */
+export const dynamic = "force-dynamic";
+
 function CatalogPlaceholder({ path }) {
   return (
     <div className="bg-white">

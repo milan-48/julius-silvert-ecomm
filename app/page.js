@@ -10,6 +10,9 @@ import {
 } from "@/lib/memoryDb/queries";
 import { withStockView } from "@/lib/memoryDb/stockUtils";
 
+/** Inventory is process-local memory; avoid static/RSC cache so stock edits show immediately. */
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const newArrivals = getNewArrivalsPool(8).map(withStockView);
   const centerPlate = getCenterPlatePool(8).map(withStockView);

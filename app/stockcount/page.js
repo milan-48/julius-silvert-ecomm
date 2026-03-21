@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Search } from "lucide-react";
 import { CATEGORIES } from "@/lib/constants";
+
+const SEARCH_DEBOUNCE_MS = 320;
 
 const STOCK_FILTERS = [
   { value: "all", label: "All stock levels" },
@@ -44,6 +47,10 @@ const inputClass =
   "w-[4.5rem] rounded-md border border-neutral-200 bg-white px-2 py-1 text-xs font-medium tabular-nums text-neutral-900 " +
   "focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/25 disabled:cursor-not-allowed disabled:bg-neutral-100";
 
+/** Category / SKU / product name — one type scale + weight for aligned table rows */
+const STOCK_TABLE_TEXT_CELL =
+  "min-w-0 px-3 py-2.5 text-sm font-normal leading-snug text-neutral-800";
+
 function FilterSelect({ className = "", style, ...rest }) {
   return (
     <select
@@ -72,7 +79,7 @@ function StatusPill({ status }) {
       className: "border-amber-200 bg-amber-50 text-amber-900",
     },
     out_of_stock: {
-      label: "Out",
+      label: "Out of stock",
       className: "border-neutral-200 bg-neutral-100 text-neutral-600",
     },
   };
@@ -107,6 +114,14 @@ function matchesStockFilter(stockStatus, filter) {
   if (filter === "all") return true;
   if (!stockStatus || typeof stockStatus !== "object") return false;
   return Object.values(stockStatus).includes(filter);
+}
+
+/** @param {{ sku?: string; title?: string }} p @param {string} needleLower trimmed lowercase */
+function matchesSkuOrTitle(p, needleLower) {
+  if (!needleLower) return true;
+  const sku = String(p.sku ?? "").toLowerCase();
+  const title = String(p.title ?? "").toLowerCase();
+  return sku.includes(needleLower) || title.includes(needleLower);
 }
 
 function rowDraftFor(product, draft) {
@@ -211,6 +226,12 @@ function PinSaveModal({
             onChange={(e) =>
               onPinChange(e.target.value.replace(/\D/g, "").slice(0, 6))
             }
+            onKeyDown={(e) => {
+              if (e.key !== "Enter") return;
+              e.preventDefault();
+              if (busy || pin.length !== 6) return;
+              onConfirm();
+            }}
             className="mt-2 w-full rounded-lg border border-neutral-300 px-3 py-2.5 text-center text-lg font-semibold tracking-[0.35em] text-neutral-900 tabular-nums focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
             placeholder="••••••"
           />
@@ -282,6 +303,15 @@ function StockCountPageClient() {
   const [pin, setPin] = useState("");
   const [pinBusy, setPinBusy] = useState(false);
   const [pinModalError, setPinModalError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim().toLowerCase());
+    }, SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(id);
+  }, [searchQuery]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -317,9 +347,12 @@ function StockCountPageClient() {
       if (categorySlug !== "all" && p.categorySlug !== categorySlug) {
         return false;
       }
-      return matchesStockFilter(p.stockStatus, stockFilter);
+      if (!matchesStockFilter(p.stockStatus, stockFilter)) {
+        return false;
+      }
+      return matchesSkuOrTitle(p, debouncedSearch);
     });
-  }, [products, categorySlug, stockFilter]);
+  }, [products, categorySlug, stockFilter, debouncedSearch]);
 
   const pendingUpdates = useMemo(
     () => buildUpdates(products, draft),
@@ -361,6 +394,8 @@ function StockCountPageClient() {
       setPinOpen(false);
       setPin("");
       await load();
+      /** Drop stale prefetched RSC payloads so PLP/PDP show updated inventory after save. */
+      router.refresh();
     } catch (e) {
       setPinModalError(
         e instanceof Error ? e.message : "Save failed",
@@ -368,7 +403,7 @@ function StockCountPageClient() {
     } finally {
       setPinBusy(false);
     }
-  }, [pin, products, draft, load, closePinModal]);
+  }, [pin, products, draft, load, closePinModal, router]);
 
   return (
     <div className="site-container max-w-[1400px] py-8 sm:py-12">
@@ -412,7 +447,32 @@ function StockCountPageClient() {
         </div>
       </div>
 
-      <div className="mt-8 flex flex-col gap-6 border-b border-neutral-200/80 pb-8 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-10 sm:gap-y-4">
+      <div className="mt-8 flex flex-col gap-6 border-b border-neutral-200/80 pb-8 lg:flex-row lg:flex-wrap lg:items-end lg:gap-x-10 lg:gap-y-4">
+        <div className="flex w-full min-w-0 flex-col gap-2.5 lg:min-w-[min(100%,280px)] lg:max-w-md lg:flex-1">
+          <label
+            htmlFor="stockcount-search"
+            className="text-sm font-semibold leading-5 tracking-[-0.01em] text-neutral-800"
+          >
+            Search SKU or product
+          </label>
+          <div className="relative">
+            <Search
+              className="pointer-events-none absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-neutral-400"
+              strokeWidth={2}
+              aria-hidden
+            />
+            <input
+              id="stockcount-search"
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="e.g. JS-MEAT or ribeye"
+              autoComplete="off"
+              className="box-border h-11 w-full rounded-lg border border-neutral-300 bg-white py-0 pl-10 pr-3.5 text-[14px] text-neutral-900 shadow-[0_1px_2px_rgba(15,23,42,0.05)] placeholder:text-neutral-400 focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              aria-label="Search by SKU or product name"
+            />
+          </div>
+        </div>
         <div className="flex min-w-[min(100%,280px)] max-w-sm flex-col gap-2.5">
           <label
             htmlFor="stockcount-category"
@@ -454,7 +514,7 @@ function StockCountPageClient() {
             ))}
           </FilterSelect>
         </div>
-        <p className="text-sm leading-5 text-neutral-600 sm:ml-auto sm:pb-1">
+        <p className="text-sm leading-5 text-neutral-600 lg:ml-auto lg:pb-1">
           <span className="font-semibold tabular-nums text-neutral-900">
             {filtered.length}
           </span>
@@ -517,7 +577,9 @@ function StockCountPageClient() {
                           colSpan={5}
                           className="px-4 py-12 text-center text-sm text-neutral-500"
                         >
-                          No items match these filters.
+                          {debouncedSearch
+                            ? "No SKUs or products match your search."
+                            : "No items match these filters."}
                         </td>
                       </tr>
                     ) : (
@@ -528,15 +590,17 @@ function StockCountPageClient() {
                             key={p.slug}
                             className="border-b border-neutral-100 hover:bg-neutral-50/80"
                           >
-                            <td className="min-w-0 px-3 py-2.5 text-xs text-neutral-600">
+                            <td className={STOCK_TABLE_TEXT_CELL}>
                               <span className="line-clamp-2">
                                 {categoryLabel(p.categorySlug)}
                               </span>
                             </td>
-                            <td className="min-w-0 whitespace-nowrap px-3 py-2.5 font-mono text-xs text-neutral-700">
+                            <td
+                              className={`${STOCK_TABLE_TEXT_CELL} whitespace-nowrap tabular-nums`}
+                            >
                               {p.sku}
                             </td>
-                            <td className="min-w-0 px-3 py-2.5 font-medium text-neutral-900">
+                            <td className={STOCK_TABLE_TEXT_CELL}>
                               <span className="line-clamp-2">{p.title}</span>
                             </td>
                             <td className="min-w-0 px-3 py-2.5 align-top">
