@@ -1,9 +1,11 @@
 "use client";
 
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Heart, ShoppingCart, UserRound, Menu } from "lucide-react";
+import { Heart, ShoppingCart, UserRound, Menu, ChevronDown } from "lucide-react";
 import { SearchBar } from "./SearchBar";
+import { NavMegaMenuPanel } from "./NavMegaMenuPanel";
 import { NAV_LINKS, SPECIAL_NAV_LINK } from "@/lib/constants";
 
 /** Lucide 24px grid — sharp on retina; avoid odd sizes that blur strokes */
@@ -12,9 +14,10 @@ const ICON_STROKE = 1.75;
 const LOGO_W = 319;
 const LOGO_H = 58;
 
+const MEGA_LEAVE_MS = 140;
+
 /**
- * Julius Silvert — white header, meat & specialty nav (our design, polished).
- * cartItemCount: badge only when count > 0.
+ * White header + category row (our theme). Drawer *content* from your screenshots lives in constants.
  */
 export function Header({
   mobileNavOpen,
@@ -22,6 +25,48 @@ export function Header({
   onMobileNavClose,
   cartItemCount = 0,
 }) {
+  const [desktopMegaId, setDesktopMegaId] = useState(null);
+  const [mobileMegaId, setMobileMegaId] = useState(null);
+  const leaveTimerRef = useRef(null);
+
+  const clearLeaveTimer = useCallback(() => {
+    if (leaveTimerRef.current != null) {
+      window.clearTimeout(leaveTimerRef.current);
+      leaveTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleCloseMega = useCallback(() => {
+    clearLeaveTimer();
+    leaveTimerRef.current = window.setTimeout(() => {
+      setDesktopMegaId(null);
+      leaveTimerRef.current = null;
+    }, MEGA_LEAVE_MS);
+  }, [clearLeaveTimer]);
+
+  useEffect(() => {
+    return () => clearLeaveTimer();
+  }, [clearLeaveTimer]);
+
+  useEffect(() => {
+    if (!mobileNavOpen) setMobileMegaId(null);
+  }, [mobileNavOpen]);
+
+  useEffect(() => {
+    if (!desktopMegaId) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setDesktopMegaId(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [desktopMegaId]);
+
+  const activeMegaItem = NAV_LINKS.find(
+    (n) => n.id === desktopMegaId && n.megaMenu,
+  );
+
+  const closeMobileNav = onMobileNavClose ?? (() => {});
+
   return (
     <header className="bg-white shadow-[0_1px_0_rgba(15,23,42,0.04)]">
       <div className="site-container">
@@ -49,11 +94,7 @@ export function Header({
           </div>
 
           <div className="flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
-            <Link
-              href="#"
-              className="icon-hit"
-              aria-label="Wishlist"
-            >
+            <Link href="#" className="icon-hit" aria-label="Wishlist">
               <Heart
                 size={ICON_PX}
                 strokeWidth={ICON_STROKE}
@@ -61,11 +102,7 @@ export function Header({
                 aria-hidden
               />
             </Link>
-            <Link
-              href="#"
-              className="icon-hit"
-              aria-label="Account"
-            >
+            <Link href="#" className="icon-hit" aria-label="Account">
               <UserRound
                 size={ICON_PX}
                 strokeWidth={ICON_STROKE}
@@ -115,16 +152,50 @@ export function Header({
           <SearchBar />
         </div>
 
-        <nav className="nav-category" aria-label="Categories">
-          <ul className="hidden flex-wrap items-center justify-center gap-x-6 gap-y-2.5 md:gap-x-7 xl:gap-x-9 lg:flex">
-            {NAV_LINKS.map(({ label, href }) => (
-              <li key={label} className="shrink-0">
-                <Link href={href} className="nav-link-premium">
-                  {label}
+        <nav
+          className="nav-category relative"
+          aria-label="Categories"
+          onMouseEnter={clearLeaveTimer}
+          onMouseLeave={scheduleCloseMega}
+        >
+          <ul className="hidden flex-wrap items-center justify-center gap-x-4 gap-y-2.5 sm:gap-x-5 md:gap-x-6 xl:gap-x-8 lg:flex">
+            {NAV_LINKS.map((item) => (
+              <li
+                key={item.id}
+                className="shrink-0"
+                onMouseEnter={() => {
+                  clearLeaveTimer();
+                  setDesktopMegaId(item.megaMenu ? item.id : null);
+                }}
+              >
+                <Link
+                  href={item.href}
+                  className={`nav-link-premium inline-flex items-center gap-1 ${
+                    item.megaMenu && desktopMegaId === item.id
+                      ? "nav-link-premium--mega-active"
+                      : ""
+                  }`}
+                  aria-expanded={
+                    item.megaMenu ? desktopMegaId === item.id : undefined
+                  }
+                  aria-haspopup={item.megaMenu ? "true" : undefined}
+                  aria-controls={
+                    item.megaMenu && desktopMegaId === item.id
+                      ? `mega-panel-${item.id}`
+                      : undefined
+                  }
+                >
+                  {item.label}
                 </Link>
               </li>
             ))}
-            <li className="shrink-0">
+            <li
+              className="shrink-0"
+              onMouseEnter={() => {
+                clearLeaveTimer();
+                setDesktopMegaId(null);
+              }}
+            >
               <Link
                 href={SPECIAL_NAV_LINK.href}
                 className="nav-link-premium nav-link-premium--accent"
@@ -134,22 +205,87 @@ export function Header({
             </li>
           </ul>
 
+          {activeMegaItem?.megaMenu ? (
+            <div
+              id={`mega-panel-${activeMegaItem.id}`}
+              className="absolute left-0 right-0 top-full z-50 hidden pt-1.5 lg:block"
+              onMouseEnter={clearLeaveTimer}
+              onMouseLeave={scheduleCloseMega}
+              role="region"
+              aria-label={`${activeMegaItem.label} submenu`}
+            >
+              <div className="mega-panel-shell mega-panel-animate rounded-b-2xl border-x border-b border-neutral-200/55">
+                <div className="relative px-5 py-5 sm:px-7 sm:py-6 lg:px-9 lg:py-7">
+                  <NavMegaMenuPanel
+                    megaMenu={activeMegaItem.megaMenu}
+                    variant="desktop"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
+
           <div className="lg:hidden">
             {mobileNavOpen ? (
               <div className="flex flex-col gap-0.5 pb-3 pt-2">
-                {NAV_LINKS.map(({ label, href }) => (
-                  <Link
-                    key={label}
-                    href={href}
-                    onClick={onMobileNavClose}
-                    className="rounded-lg px-2 py-3 text-[14px] font-medium tracking-tight text-neutral-600 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
-                  >
-                    {label}
-                  </Link>
-                ))}
+                {NAV_LINKS.map((item) =>
+                  item.megaMenu ? (
+                    <div key={item.id} className="rounded-lg">
+                      <div className="flex items-stretch gap-1">
+                        <Link
+                          href={item.href}
+                          onClick={closeMobileNav}
+                          className="min-w-0 flex-1 rounded-lg px-2 py-3 text-left text-[14px] font-medium tracking-tight text-neutral-600 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
+                        >
+                          {item.label}
+                        </Link>
+                        <button
+                          type="button"
+                          className="flex w-11 shrink-0 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-800"
+                          aria-expanded={mobileMegaId === item.id}
+                          aria-controls={`mobile-mega-${item.id}`}
+                          onClick={() =>
+                            setMobileMegaId((m) =>
+                              m === item.id ? null : item.id,
+                            )
+                          }
+                        >
+                          <ChevronDown
+                            className={`size-5 transition-transform duration-200 ${
+                              mobileMegaId === item.id ? "rotate-180" : ""
+                            }`}
+                            strokeWidth={2}
+                            aria-hidden
+                          />
+                        </button>
+                      </div>
+                      {mobileMegaId === item.id ? (
+                        <div
+                          id={`mobile-mega-${item.id}`}
+                          className="mx-1 mb-2 ml-2 rounded-xl border border-neutral-200/70 bg-gradient-to-b from-neutral-50/90 to-white py-4 pl-4 pr-3 shadow-inner shadow-neutral-900/[0.03]"
+                        >
+                          <NavMegaMenuPanel
+                            megaMenu={item.megaMenu}
+                            variant="mobile"
+                            onNavigate={closeMobileNav}
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <Link
+                      key={item.id}
+                      href={item.href}
+                      onClick={closeMobileNav}
+                      className="block rounded-lg px-2 py-3 text-[14px] font-medium tracking-tight text-neutral-600 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
+                    >
+                      {item.label}
+                    </Link>
+                  ),
+                )}
                 <Link
                   href={SPECIAL_NAV_LINK.href}
-                  onClick={onMobileNavClose}
+                  onClick={closeMobileNav}
                   className="rounded-lg px-2 py-3 text-[14px] font-semibold tracking-tight text-[#E7000B] hover:text-[#c40009]"
                 >
                   {SPECIAL_NAV_LINK.label}
