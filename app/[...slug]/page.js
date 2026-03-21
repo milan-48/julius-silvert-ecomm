@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { CategoryListingPage } from "@/components/categoryListing/CategoryListingPage";
+import { ProductDetailPage } from "@/components/productDetail/ProductDetailPage";
 import {
   findCategoryBySlug,
   getCategoryListingProductPool,
 } from "@/lib/constants";
+import { getProductDetailBySlug } from "@/lib/productCatalog";
 
 function CatalogPlaceholder({ path }) {
   return (
@@ -30,15 +32,32 @@ function CatalogPlaceholder({ path }) {
   );
 }
 
+export async function generateMetadata({ params }) {
+  const { slug } = await params;
+  const parts = Array.isArray(slug) ? slug : slug != null ? [String(slug)] : [];
+  if (parts.length !== 1) return {};
+  const product = getProductDetailBySlug(parts[0]);
+  if (!product) return {};
+  return {
+    title: `${product.title} | Julius Silvert`,
+    description: product.tabDescription?.slice(0, 155) ?? undefined,
+  };
+}
+
 export default async function CatalogRoutePage({ params }) {
   const { slug } = await params;
   const parts = Array.isArray(slug) ? slug : slug != null ? [String(slug)] : [];
 
   if (parts.length === 1) {
-    const category = findCategoryBySlug(parts[0]);
+    const segment = parts[0];
+    const category = findCategoryBySlug(segment);
     if (category) {
       const products = getCategoryListingProductPool();
       return <CategoryListingPage category={category} products={products} />;
+    }
+    const product = getProductDetailBySlug(segment);
+    if (product) {
+      return <ProductDetailPage product={product} />;
     }
   }
 

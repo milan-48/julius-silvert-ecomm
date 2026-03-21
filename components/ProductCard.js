@@ -40,7 +40,6 @@ export function ProductCard({
   slug,
   imageSrc,
   imageAlt,
-  tier,
   title,
   vendor,
   netWeight,
@@ -144,9 +143,6 @@ export function ProductCard({
 
       {/* z-[2]: always above image stack on iOS (later sibling + higher z-index) */}
       <div className="relative z-[2] flex min-h-0 flex-1 flex-col gap-2 rounded-b-xl bg-white p-4">
-        <p className="text-xs font-normal uppercase leading-4 tracking-normal text-[#6A7282]">
-          {tier}
-        </p>
         <h3 className="min-h-0 text-sm font-semibold leading-5 tracking-[-0.15px] text-[#0A0A0A]">
           <Link
             href={productHref}

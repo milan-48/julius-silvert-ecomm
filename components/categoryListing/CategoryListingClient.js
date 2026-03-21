@@ -147,7 +147,6 @@ export function CategoryListingClient({ products }) {
                       slug={p.slug}
                       imageSrc={p.imageSrc}
                       imageAlt={p.imageAlt}
-                      tier={p.tier}
                       title={p.title}
                       vendor={p.vendor}
                       netWeight={p.netWeight}

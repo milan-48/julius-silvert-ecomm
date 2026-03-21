@@ -1,0 +1,527 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { Heart, Minus, Plus, Star } from "lucide-react";
+import { getRelatedProductsForSlug } from "@/lib/productCatalog";
+import { getPricingForSize } from "@/lib/productPricing";
+import { RequistionIcon } from "@/lib/icons";
+import { softPlaceholderBg } from "@/lib/softPlaceholderColor";
+import { YouMayAlsoLike } from "./YouMayAlsoLike";
+
+const ICON_STROKE = 1.75;
+const QTY_MIN = 1;
+const QTY_MAX = 99;
+
+function clampQty(n) {
+  const x = Math.floor(Number(n));
+  if (Number.isNaN(x)) return QTY_MIN;
+  return Math.min(QTY_MAX, Math.max(QTY_MIN, x));
+}
+
+function formatUsd(value) {
+  return value.toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+const TABS = [
+  { id: "description", label: "Product Description" },
+  { id: "features", label: "Key Features" },
+  { id: "brand", label: "About the Brand" },
+  { id: "reviews", label: "Reviews" },
+];
+
+/** Figma tab panel headings: 20px / 28px / bold / -0.45px / #0A0A0A */
+function TabSectionTitle({ children }) {
+  return (
+    <h2 className="mb-4 text-[20px] font-bold leading-[28px] tracking-[-0.45px] text-[#0A0A0A] sm:mb-5">
+      {children}
+    </h2>
+  );
+}
+
+/** Figma tab panel body: 16px / 26px / regular / -0.31px / #0A0A0A */
+const TAB_BODY_CLASS =
+  "text-[16px] font-normal leading-[26px] tracking-[-0.31px] text-[#0A0A0A]";
+
+/**
+ * @param {{ product: Record<string, unknown> }} props
+ */
+export function ProductDetailPage({ product }) {
+  const p = product;
+  const slug = String(p.slug ?? "");
+  const title = String(p.title ?? "");
+  const brandDisplay = String(p.brandDisplay ?? p.vendor ?? "");
+  const itemNumber = String(p.itemNumber ?? "");
+  const inStock = Boolean(p.inStock);
+  const rating = Number(p.rating ?? 4.8);
+  const reviewCount = Number(p.reviewCount ?? 0);
+  const categorySlug = String(p.breadcrumbCategorySlug ?? "whats-new");
+  const categoryLabel = String(p.breadcrumbCategoryLabel ?? "What's New");
+  const galleryImages = /** @type {string[]} */ (p.galleryImages ?? []);
+  const galleryAlts = /** @type {string[]} */ (p.galleryAlts ?? []);
+  const tabDescription = String(p.tabDescription ?? "");
+  const tabFeatures = /** @type {string[]} */ (p.tabFeatures ?? []);
+  const tabAboutBrand = String(p.tabAboutBrand ?? "");
+
+  const descriptionParagraphs = useMemo(() => {
+    const stripped = tabDescription
+      .replace(/^Product overview\s*\n+/i, "")
+      .replace(/^Product Overview\s*\n+/i, "")
+      .trim();
+    return stripped.split(/\n\n/).map((s) => s.trim()).filter(Boolean);
+  }, [tabDescription]);
+
+  const price = Number(p.price ?? 0);
+  const unitPrice = String(p.unitPrice ?? "");
+  const netWeight = String(p.netWeight ?? "");
+  const priceBySize = p.priceBySize;
+  const sizeOptions = /** @type {{ value: string; label: string }[] | undefined} */ (
+    p.sizeOptions
+  );
+  const defaultSize = String(p.defaultSize ?? sizeOptions?.[0]?.value ?? "case");
+  /** Only show picker when there’s a real choice (0–1 options = hide). */
+  const showSizePicker =
+    Array.isArray(sizeOptions) && sizeOptions.length > 1;
+  const footerMode = p.footerMode === "quantity" ? "quantity" : "add";
+
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [wishlisted, setWishlisted] = useState(false);
+  const [selectedSize, setSelectedSize] = useState(defaultSize);
+  const [qty, setQty] = useState(1);
+  const [qtyInput, setQtyInput] = useState("1");
+  const [tab, setTab] = useState("description");
+  const [failedIdx, setFailedIdx] = useState(() => new Set());
+  const qtyFieldRef = useRef(null);
+
+  const placeholderBg = useMemo(() => softPlaceholderBg(slug), [slug]);
+
+  useEffect(() => {
+    setSelectedSize(defaultSize);
+    setActiveIdx(0);
+    setFailedIdx(new Set());
+    setQty(1);
+    setQtyInput("1");
+    setTab("description");
+  }, [slug, defaultSize]);
+
+  useEffect(() => {
+    const el = qtyFieldRef.current;
+    if (!el) return;
+    const onWheel = (e) => e.preventDefault();
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
+
+  const resolved = useMemo(
+    () =>
+      getPricingForSize(
+        { price, unitPrice, netWeight, priceBySize },
+        selectedSize,
+      ),
+    [priceBySize, selectedSize, price, unitPrice, netWeight],
+  );
+
+  const relatedProducts = useMemo(
+    () => getRelatedProductsForSlug(slug, 4),
+    [slug],
+  );
+
+  function setQtyCommitted(next) {
+    const q = clampQty(next);
+    setQty(q);
+    setQtyInput(String(q));
+  }
+
+  const mainSrc = galleryImages[activeIdx] ?? "";
+  const mainAlt = galleryAlts[activeIdx] ?? title;
+  const mainFailed = failedIdx.has(activeIdx);
+
+  return (
+    <div className="bg-white pb-16 pt-6 sm:pb-20 sm:pt-8 lg:pb-24">
+      <div className="site-container max-w-[1600px]">
+        <nav
+          className="text-[11px] font-medium uppercase leading-4 tracking-[0.08em] text-neutral-500 sm:text-xs"
+          aria-label="Breadcrumb"
+        >
+          <ol className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <li>
+              <Link
+                href="/"
+                className="transition-colors hover:text-neutral-800 focus-visible:outline focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2"
+              >
+                Home
+              </Link>
+            </li>
+            <li className="text-neutral-400" aria-hidden>
+              &gt;
+            </li>
+            <li>
+              <Link
+                href={`/${categorySlug}`}
+                className="transition-colors hover:text-neutral-800 focus-visible:outline focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2"
+              >
+                {categoryLabel.toUpperCase()}
+              </Link>
+            </li>
+            <li className="text-neutral-400" aria-hidden>
+              &gt;
+            </li>
+            <li className="max-w-[min(100%,28rem)] truncate text-neutral-800" aria-current="page">
+              {title}
+            </li>
+          </ol>
+        </nav>
+
+        <div className="mt-6 grid gap-10 lg:mt-8 lg:grid-cols-2 lg:gap-12 xl:gap-16">
+          {/* Gallery */}
+          <div className="min-w-0 space-y-4">
+            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-neutral-100 ring-1 ring-neutral-200/80">
+              {!mainSrc || mainFailed ? (
+                <div
+                  className="absolute inset-0"
+                  style={{ backgroundColor: placeholderBg }}
+                  aria-hidden
+                />
+              ) : (
+                <Image
+                  src={mainSrc}
+                  alt={mainAlt}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  priority
+                  onError={() =>
+                    setFailedIdx((s) => new Set(s).add(activeIdx))
+                  }
+                />
+              )}
+              <button
+                type="button"
+                className="absolute right-3 top-3 z-10 flex size-11 items-center justify-center rounded-full bg-white/95 text-neutral-800 shadow-sm ring-1 ring-black/[0.06] transition-colors hover:bg-white focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500"
+                aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
+                aria-pressed={wishlisted}
+                onClick={() => setWishlisted((w) => !w)}
+              >
+                <Heart
+                  size={20}
+                  strokeWidth={ICON_STROKE}
+                  className={wishlisted ? "fill-red-500 text-red-500" : ""}
+                  aria-hidden
+                />
+              </button>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1 sm:gap-3">
+              {galleryImages.map((src, i) => {
+                const sel = i === activeIdx;
+                const failed = failedIdx.has(i);
+                return (
+                  <button
+                    key={`${src}-${i}`}
+                    type="button"
+                    onClick={() => setActiveIdx(i)}
+                    className={`relative h-16 w-20 shrink-0 overflow-hidden rounded-lg ring-2 transition-shadow sm:h-[4.5rem] sm:w-24 ${
+                      sel
+                        ? "ring-neutral-900 shadow-md"
+                        : "ring-transparent hover:ring-neutral-300"
+                    }`}
+                    aria-label={`Show image ${i + 1}`}
+                    aria-current={sel ? "true" : undefined}
+                  >
+                    {!src || failed ? (
+                      <div
+                        className="absolute inset-0"
+                        style={{ backgroundColor: placeholderBg }}
+                        aria-hidden
+                      />
+                    ) : (
+                      <Image
+                        src={src}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        sizes="96px"
+                        onError={() =>
+                          setFailedIdx((s) => new Set(s).add(i))
+                        }
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Buy box */}
+          <div className="flex min-w-0 flex-col">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:gap-x-4">
+              <h1 className="min-w-0 max-w-full text-[30px] font-bold leading-[36px] tracking-[0.4px] text-[#0A0A0A]">
+                {title}
+              </h1>
+              {inStock ? (
+                <span className="inline-flex shrink-0 items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
+                  In Stock
+                </span>
+              ) : (
+                <span className="inline-flex shrink-0 items-center rounded-full border border-neutral-200 bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600">
+                  Out of Stock
+                </span>
+              )}
+            </div>
+
+            <div className="mt-4 space-y-1.5">
+              <p className="text-[14px] font-normal leading-5 tracking-[-0.15px]">
+                <span className="text-[#4A5565]">Brand:</span>{" "}
+                <span className="font-semibold uppercase tracking-[-0.15px] text-[#0A0A0A]">
+                  {brandDisplay}
+                </span>
+              </p>
+              <p className="text-[14px] font-normal leading-5 tracking-[-0.15px]">
+                <span className="text-[#4A5565]">Item:</span>{" "}
+                <span className="text-[#0A0A0A]">{itemNumber}</span>
+              </p>
+              <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[14px] leading-5 tracking-[-0.15px]">
+                <Star
+                  className="size-4 fill-amber-400 text-amber-400"
+                  strokeWidth={0}
+                  aria-hidden
+                />
+                <span className="font-semibold text-[#0A0A0A]">{rating}</span>
+                <span className="font-normal text-[#4A5565]">
+                  ({reviewCount} reviews)
+                </span>
+              </div>
+            </div>
+
+            {/* Price first, then unit toggle — avoids a heavy divider + huge gap above price */}
+            <div className="mt-6">
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <span className="text-3xl font-bold tabular-nums tracking-tight text-neutral-900 sm:text-4xl">
+                  {formatUsd(resolved.price)}
+                </span>
+                <span className="text-base text-neutral-500">
+                  {resolved.unitPrice}
+                </span>
+              </div>
+              <p className="mt-1 text-sm text-neutral-500">{resolved.netWeight}</p>
+            </div>
+
+            {showSizePicker ? (
+              <div className="mt-4">
+                <p className="text-[14px] font-semibold leading-5 tracking-[-0.15px] text-[#0A0A0A]">
+                  Size:
+                </p>
+                <div
+                  role="radiogroup"
+                  aria-label="Size"
+                  className="mt-2 flex flex-wrap gap-2"
+                >
+                  {sizeOptions.map((opt) => {
+                    const selected = selectedSize === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        onClick={() => setSelectedSize(opt.value)}
+                        className={`inline-flex h-10 min-w-[4rem] shrink-0 items-center justify-center rounded-[8px] border px-5 text-xs font-bold uppercase tracking-wide transition-colors focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
+                          selected
+                            ? "border-[#0f172a] bg-[#0f172a] text-white"
+                            : "border-[#E5E7EB] bg-[#F3F4F6] text-[#0f172a] hover:bg-[#ECEEF2]"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+
+            <div className="mt-8 flex min-w-0 items-center gap-2">
+              {footerMode === "quantity" ? (
+                <div className="flex h-12 min-h-12 min-w-0 flex-1 items-center justify-between rounded-lg border border-neutral-200 bg-white px-1 sm:px-2">
+                  <button
+                    type="button"
+                    className="inline-flex size-11 shrink-0 items-center justify-center rounded-md text-neutral-600 transition-colors hover:bg-neutral-100 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-40"
+                    aria-label="Decrease quantity"
+                    disabled={qty <= QTY_MIN}
+                    onClick={() => setQtyCommitted(qty - 1)}
+                  >
+                    <Minus className="size-4" strokeWidth={2} aria-hidden />
+                  </button>
+                  <input
+                    ref={qtyFieldRef}
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    aria-label="Quantity"
+                    value={qtyInput}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/\D/g, "");
+                      setQtyInput(v);
+                      if (v !== "") {
+                        const n = parseInt(v, 10);
+                        if (!Number.isNaN(n)) setQty(clampQty(n));
+                      }
+                    }}
+                    onBlur={() => {
+                      const n = parseInt(qtyInput, 10);
+                      const q =
+                        qtyInput === "" || Number.isNaN(n)
+                          ? QTY_MIN
+                          : clampQty(n);
+                      setQtyCommitted(q);
+                    }}
+                    className="min-w-[2.5rem] flex-1 bg-transparent text-center text-sm font-semibold tabular-nums text-neutral-900 outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  />
+                  <button
+                    type="button"
+                    className="inline-flex size-11 shrink-0 items-center justify-center rounded-md text-neutral-600 transition-colors hover:bg-neutral-100 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-40"
+                    aria-label="Increase quantity"
+                    disabled={qty >= QTY_MAX}
+                    onClick={() => setQtyCommitted(qty + 1)}
+                  >
+                    <Plus className="size-4" strokeWidth={2} aria-hidden />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="h-12 min-h-12 min-w-0 flex-1 rounded-lg bg-[#0f172a] text-sm font-bold uppercase tracking-wide text-white transition-colors hover:bg-[#1e293b] focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                >
+                  Add
+                </button>
+              )}
+              <button
+                type="button"
+                className="flex h-12 min-h-12 w-14 shrink-0 items-center justify-center rounded-lg border border-neutral-200 text-neutral-600 transition-colors hover:bg-neutral-50 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500"
+                aria-label="Add to requisition list"
+              >
+                <RequistionIcon color="currentColor" width={28} height={28} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs — single hairline under tab row only (#EAECF0); no extra top border */}
+        <div className="mt-14 sm:mt-16">
+          <div
+            role="tablist"
+            aria-label="Product information"
+            className="relative flex w-full items-end justify-between gap-6 overflow-x-auto border-b border-[#EAECF0] [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-8 lg:gap-12 xl:gap-16 [&::-webkit-scrollbar]:hidden"
+          >
+            {TABS.map((t) => {
+              const label =
+                t.id === "reviews"
+                  ? `${t.label} (${reviewCount})`
+                  : t.label;
+              const selected = tab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  aria-controls={`panel-${t.id}`}
+                  id={`tab-${t.id}`}
+                  onClick={() => setTab(t.id)}
+                  className="relative min-w-max flex-1 px-1 pb-[17px] pt-3 text-center text-[14px] font-medium leading-5 tracking-[-0.15px] text-[#0A0A0A] sm:min-w-0 sm:px-2"
+                >
+                  <span className="relative z-10 inline-block">{label}</span>
+                  {selected ? (
+                    <span
+                      className="absolute inset-x-0 bottom-0 z-20 h-[3px] bg-[#0A0A0A]"
+                      aria-hidden
+                    />
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="pt-10 sm:pt-12 lg:pt-14">
+            {tab === "description" ? (
+              <div
+                id="panel-description"
+                role="tabpanel"
+                aria-labelledby="tab-description"
+                className="max-w-3xl"
+              >
+                <TabSectionTitle>Product Overview</TabSectionTitle>
+                <div className={`space-y-5 ${TAB_BODY_CLASS}`}>
+                  {descriptionParagraphs.map((para, i) => (
+                    <p key={i}>{para}</p>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {tab === "features" ? (
+              <div
+                id="panel-features"
+                role="tabpanel"
+                aria-labelledby="tab-features"
+                className="max-w-3xl"
+              >
+                <TabSectionTitle>Key Features</TabSectionTitle>
+                <ul
+                  className={`list-outside list-disc space-y-3 pl-5 marker:text-[#0A0A0A] ${TAB_BODY_CLASS}`}
+                >
+                  {tabFeatures.map((line, i) => (
+                    <li key={i} className="pl-1">
+                      {line}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {tab === "brand" ? (
+              <div
+                id="panel-brand"
+                role="tabpanel"
+                aria-labelledby="tab-brand"
+                className="max-w-3xl"
+              >
+                <TabSectionTitle>About the Brand</TabSectionTitle>
+                <p className={TAB_BODY_CLASS}>{tabAboutBrand}</p>
+              </div>
+            ) : null}
+
+            {tab === "reviews" ? (
+              <div
+                id="panel-reviews"
+                role="tabpanel"
+                aria-labelledby="tab-reviews"
+                className="max-w-3xl"
+              >
+                <TabSectionTitle>Customer Reviews</TabSectionTitle>
+                <p className={TAB_BODY_CLASS}>
+                  Customer reviews and verified ratings will appear here. Demo
+                  listing shows{" "}
+                  <strong className="font-semibold text-[#0A0A0A]">
+                    {reviewCount}
+                  </strong>{" "}
+                  reviews at{" "}
+                  <strong className="font-semibold text-[#0A0A0A]">
+                    {rating}
+                  </strong>{" "}
+                  average — connect your review provider to go live.
+                </p>
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        <YouMayAlsoLike items={relatedProducts} />
+      </div>
+    </div>
+  );
+}
