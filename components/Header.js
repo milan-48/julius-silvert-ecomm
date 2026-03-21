@@ -8,8 +8,7 @@ import { SearchBar } from "./SearchBar";
 import { NavMegaMenuPanel } from "./NavMegaMenuPanel";
 import { NAV_LINKS, SPECIAL_NAV_LINK } from "@/lib/constants";
 
-/** Lucide 24px grid — sharp on retina; avoid odd sizes that blur strokes */
-const ICON_PX = 24;
+/** Header utility icons: 20px mobile, 24px sm+ (Lucide grid stays sharp). */
 const ICON_STROKE = 1.75;
 const LOGO_W = 319;
 const LOGO_H = 58;
@@ -96,17 +95,15 @@ export function Header({
           <div className="flex shrink-0 items-center justify-end gap-0 sm:gap-1">
             <Link href="#" className="icon-hit" aria-label="Wishlist">
               <Heart
-                size={ICON_PX}
                 strokeWidth={ICON_STROKE}
-                className="shrink-0"
+                className="size-5 shrink-0 sm:size-6"
                 aria-hidden
               />
             </Link>
             <Link href="#" className="icon-hit" aria-label="Account">
               <UserRound
-                size={ICON_PX}
                 strokeWidth={ICON_STROKE}
-                className="shrink-0"
+                className="size-5 shrink-0 sm:size-6"
                 aria-hidden
               />
             </Link>
@@ -120,9 +117,8 @@ export function Header({
               }
             >
               <ShoppingCart
-                size={ICON_PX}
                 strokeWidth={ICON_STROKE}
-                className="shrink-0"
+                className="size-5 shrink-0 sm:size-6"
                 aria-hidden
               />
               {cartItemCount > 0 ? (
@@ -139,9 +135,8 @@ export function Header({
               aria-expanded={mobileNavOpen}
             >
               <Menu
-                size={ICON_PX}
                 strokeWidth={ICON_STROKE}
-                className="shrink-0"
+                className="size-5 shrink-0 sm:size-6"
                 aria-hidden
               />
             </button>
