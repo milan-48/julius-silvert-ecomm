@@ -11,6 +11,7 @@ import { decrementCartLine, incrementCartLine } from "@/lib/store/cartSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
 import { CartQuantityInput } from "@/components/CartQuantityInput";
 import { RequistionIcon } from "@/lib/icons";
+import { availableUnitsForPurchase } from "@/lib/productStock";
 import { softPlaceholderBg } from "@/lib/softPlaceholderColor";
 
 function formatUsd(value) {
@@ -46,6 +47,7 @@ export function ProductCard({
   sizeOptions,
   defaultSize,
   priceBySize,
+  stock,
 }) {
   const dispatch = useAppDispatch();
   const router = useRouter();
@@ -83,12 +85,23 @@ export function ProductCard({
     [priceBySize, selectedSize, price, unitPrice, netWeight],
   );
 
+  const maxShelfUnits = useMemo(
+    () => availableUnitsForPurchase(stock, purchaseSizeKey),
+    [stock, purchaseSizeKey],
+  );
+  const outOfStock = Number.isFinite(maxShelfUnits) && maxShelfUnits <= 0;
+  const atShelfCap =
+    Number.isFinite(maxShelfUnits) &&
+    Boolean(cartLine) &&
+    cartLine.quantity >= maxShelfUnits;
+
   useEffect(() => {
     setImageFailed(false);
   }, [imageSrc]);
 
   function handleFirstAdd(e) {
     e.stopPropagation();
+    if (outOfStock) return;
     dispatch(
       addToCartWithNotification({
         sku: lineSku,
@@ -164,6 +177,9 @@ export function ProductCard({
         </h3>
         <p className="text-xs font-normal uppercase leading-4 tracking-normal text-[#6A7282]">
           {vendor}
+        </p>
+        <p className="text-xs font-normal leading-4 tracking-normal text-[#6A7282]">
+          <span className="font-medium">Item#:</span> {sku ?? lineSku}
         </p>
         <p className="text-xs font-normal leading-4 tracking-normal text-[#6A7282]">
           {resolved.netWeight}
@@ -243,7 +259,7 @@ export function ProductCard({
                 type="button"
                 className="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-neutral-600 transition-colors [-webkit-tap-highlight-color:transparent] hover:bg-neutral-100 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-40"
                 aria-label="Increase quantity"
-                disabled={cartLine.quantity >= 99}
+                disabled={cartLine.quantity >= 99 || atShelfCap}
                 onClick={(e) => {
                   e.stopPropagation();
                   dispatch(incrementCartLine(cartLine.lineId));
@@ -255,10 +271,11 @@ export function ProductCard({
           ) : (
             <button
               type="button"
-              className="h-11 min-h-11 min-w-0 flex-1 touch-manipulation rounded-lg bg-neutral-900 text-sm font-semibold tracking-tight text-white transition-colors [-webkit-tap-highlight-color:transparent] hover:bg-neutral-800 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 active:bg-neutral-800 sm:h-10 sm:min-h-0"
+              disabled={outOfStock}
+              className="h-11 min-h-11 min-w-0 flex-1 touch-manipulation rounded-lg bg-neutral-900 text-sm font-semibold tracking-tight text-white transition-colors [-webkit-tap-highlight-color:transparent] hover:bg-neutral-800 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 active:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-400 sm:h-10 sm:min-h-0"
               onClick={handleFirstAdd}
             >
-              ADD
+              {outOfStock ? "Out of stock" : "ADD"}
             </button>
           )}
           <button

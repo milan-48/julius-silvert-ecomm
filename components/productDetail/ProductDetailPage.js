@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, Minus, Plus, Star } from "lucide-react";
+import { LOW_STOCK_THRESHOLD } from "@/lib/memoryDb/stockUtils";
 import { getRelatedProductsForSlug } from "@/lib/productCatalog";
 import { getPricingForSize } from "@/lib/productPricing";
+import { availableUnitsForPurchase } from "@/lib/productStock";
 import { RequistionIcon } from "@/lib/icons";
 import { softPlaceholderBg } from "@/lib/softPlaceholderColor";
 import { addToCartWithNotification } from "@/lib/store/cartThunks";
@@ -57,6 +59,7 @@ export function ProductDetailPage({ product }) {
   const brandDisplay = String(p.brandDisplay ?? p.vendor ?? "");
   const itemNumber = String(p.itemNumber ?? "");
   const inStock = Boolean(p.inStock);
+  const stock = p.stock;
   const rating = Number(p.rating ?? 4.8);
   const reviewCount = Number(p.reviewCount ?? 0);
   const categorySlug = String(p.breadcrumbCategorySlug ?? "whats-new");
@@ -127,7 +130,22 @@ export function ProductDetailPage({ product }) {
     [slug],
   );
 
+  const maxShelfUnits = useMemo(
+    () => availableUnitsForPurchase(stock, purchaseSizeKey),
+    [stock, purchaseSizeKey],
+  );
+  const lineOutOfStock = Number.isFinite(maxShelfUnits) && maxShelfUnits <= 0;
+  const lineLowStock =
+    Number.isFinite(maxShelfUnits) &&
+    maxShelfUnits > 0 &&
+    maxShelfUnits <= LOW_STOCK_THRESHOLD;
+  const atShelfCap =
+    Number.isFinite(maxShelfUnits) &&
+    Boolean(cartLine) &&
+    cartLine.quantity >= maxShelfUnits;
+
   function handleAddToCart() {
+    if (lineOutOfStock) return;
     dispatch(
       addToCartWithNotification({
         sku,
@@ -269,7 +287,15 @@ export function ProductDetailPage({ product }) {
               <h1 className="min-w-0 max-w-full text-[30px] font-bold leading-[36px] tracking-[0.4px] text-[#0A0A0A]">
                 {title}
               </h1>
-              {inStock ? (
+              {lineOutOfStock ? (
+                <span className="inline-flex shrink-0 items-center rounded-full border border-neutral-200 bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600">
+                  Out of Stock
+                </span>
+              ) : lineLowStock ? (
+                <span className="inline-flex shrink-0 items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-900">
+                  Low Stock
+                </span>
+              ) : inStock ? (
                 <span className="inline-flex shrink-0 items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
                   In Stock
                 </span>
@@ -370,7 +396,7 @@ export function ProductDetailPage({ product }) {
                     type="button"
                     className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-neutral-600 transition-colors hover:bg-neutral-100 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-40"
                     aria-label="Increase quantity"
-                    disabled={cartLine.quantity >= 99}
+                    disabled={cartLine.quantity >= 99 || atShelfCap}
                     onClick={() => dispatch(incrementCartLine(cartLine.lineId))}
                   >
                     <Plus className="size-4" strokeWidth={2} aria-hidden />
@@ -379,10 +405,11 @@ export function ProductDetailPage({ product }) {
               ) : (
                 <button
                   type="button"
-                  className="h-12 min-h-12 min-w-0 flex-1 rounded-lg bg-[#0f172a] text-sm font-bold uppercase tracking-wide text-white transition-colors hover:bg-[#1e293b] focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                  disabled={lineOutOfStock}
+                  className="h-12 min-h-12 min-w-0 flex-1 rounded-lg bg-[#0f172a] text-sm font-bold uppercase tracking-wide text-white transition-colors hover:bg-[#1e293b] focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-neutral-400"
                   onClick={handleAddToCart}
                 >
-                  Add
+                  {lineOutOfStock ? "Out of stock" : "Add"}
                 </button>
               )}
               <button

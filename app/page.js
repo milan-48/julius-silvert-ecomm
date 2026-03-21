@@ -8,10 +8,11 @@ import {
   getCenterPlatePool,
   getNewArrivalsPool,
 } from "@/lib/memoryDb/queries";
+import { withStockView } from "@/lib/memoryDb/stockUtils";
 
 export default async function Home() {
-  const newArrivals = getNewArrivalsPool(8);
-  const centerPlate = getCenterPlatePool(8);
+  const newArrivals = getNewArrivalsPool(8).map(withStockView);
+  const centerPlate = getCenterPlatePool(8).map(withStockView);
 
   return (
     <>

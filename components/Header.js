@@ -29,7 +29,10 @@ export function Header({
   const cartItemCount = useAppSelector(selectCartCount);
   const [desktopMegaId, setDesktopMegaId] = useState(null);
   const [mobileMegaId, setMobileMegaId] = useState(null);
+  /** Hamburger “more” menu: Stock count + Requisition list (all breakpoints). */
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const leaveTimerRef = useRef(null);
+  const moreMenuRef = useRef(null);
 
   const clearLeaveTimer = useCallback(() => {
     if (leaveTimerRef.current != null) {
@@ -62,6 +65,30 @@ export function Header({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [desktopMegaId]);
+
+  useEffect(() => {
+    if (!moreMenuOpen) return;
+    const onDoc = (e) => {
+      const el = moreMenuRef.current;
+      if (el && !el.contains(/** @type {Node} */ (e.target))) {
+        setMoreMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [moreMenuOpen]);
+
+  useEffect(() => {
+    if (!moreMenuOpen) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setMoreMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [moreMenuOpen]);
+
+  const closeMoreMenu = useCallback(() => setMoreMenuOpen(false), []);
+  const toggleMoreMenu = useCallback(() => setMoreMenuOpen((o) => !o), []);
 
   const activeMegaItem = NAV_LINKS.find(
     (n) => n.id === desktopMegaId && n.megaMenu,
@@ -131,19 +158,48 @@ export function Header({
                 </span>
               ) : null}
             </button>
-            <button
-              type="button"
-              onClick={onMobileNavToggle ?? (() => {})}
-              className="icon-hit"
-              aria-label={mobileNavOpen ? "Close menu" : "Open menu"}
-              aria-expanded={mobileNavOpen}
-            >
-              <Menu
-                strokeWidth={ICON_STROKE}
-                className="size-5 shrink-0 sm:size-6"
-                aria-hidden
-              />
-            </button>
+            <div className="relative" ref={moreMenuRef}>
+              <button
+                type="button"
+                className="icon-hit border-0 bg-transparent p-0"
+                aria-label={moreMenuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={moreMenuOpen}
+                aria-haspopup="menu"
+                aria-controls="header-more-menu"
+                onClick={toggleMoreMenu}
+              >
+                <Menu
+                  strokeWidth={ICON_STROKE}
+                  className="size-5 shrink-0 sm:size-6"
+                  aria-hidden
+                />
+              </button>
+              {moreMenuOpen ? (
+                <div
+                  id="header-more-menu"
+                  role="menu"
+                  aria-orientation="vertical"
+                  className="absolute right-0 top-[calc(100%+10px)] z-[60] min-w-[min(100vw-2rem,15rem)] rounded-xl border border-neutral-200/90 bg-white py-1 shadow-lg shadow-neutral-900/10"
+                >
+                  <Link
+                    role="menuitem"
+                    href="/stockcount"
+                    onClick={closeMoreMenu}
+                    className="block px-4 py-3 text-left text-[14px] font-medium tracking-tight text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
+                  >
+                    Stock count
+                  </Link>
+                  <Link
+                    role="menuitem"
+                    href="/requisitions"
+                    onClick={closeMoreMenu}
+                    className="block px-4 py-3 text-left text-[14px] font-medium tracking-tight text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
+                  >
+                    Requisition list
+                  </Link>
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
 
@@ -225,6 +281,24 @@ export function Header({
           ) : null}
 
           <div className="lg:hidden">
+            <button
+              type="button"
+              className="flex w-full items-center justify-between gap-2 border-b border-neutral-100 px-2 py-2.5 text-left text-[14px] font-semibold tracking-tight text-neutral-800"
+              onClick={onMobileNavToggle ?? (() => {})}
+              aria-expanded={mobileNavOpen}
+              aria-controls="mobile-category-nav"
+              id="mobile-category-toggle"
+            >
+              <span>Shop categories</span>
+              <ChevronDown
+                className={`size-5 shrink-0 text-neutral-500 transition-transform duration-200 ${
+                  mobileNavOpen ? "rotate-180" : ""
+                }`}
+                strokeWidth={2}
+                aria-hidden
+              />
+            </button>
+            <div id="mobile-category-nav">
             {mobileNavOpen ? (
               <div className="flex flex-col gap-0.5 pb-3 pt-2">
                 {NAV_LINKS.map((item) =>
@@ -291,6 +365,7 @@ export function Header({
                 </Link>
               </div>
             ) : null}
+            </div>
           </div>
         </nav>
       </div>

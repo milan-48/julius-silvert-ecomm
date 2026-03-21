@@ -53,6 +53,7 @@ export function NewArrivalsSection({ products = [] }) {
               footerMode={p.footerMode}
               sizeOptions={p.sizeOptions}
               defaultSize={p.defaultSize}
+              stock={p.stock}
             />
           ))}
         </div>

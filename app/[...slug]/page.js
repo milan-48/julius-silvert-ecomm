@@ -7,6 +7,7 @@ import {
   humanizePathSegment,
 } from "@/lib/navMegaMenu";
 import { listProductsByCategory } from "@/lib/memoryDb/queries";
+import { withStockView } from "@/lib/memoryDb/stockUtils";
 import { getProductDetailBySlug } from "@/lib/productCatalog";
 
 function CatalogPlaceholder({ path }) {
@@ -72,7 +73,7 @@ export default async function CatalogRoutePage({ params }) {
     const segment = parts[0];
     const category = findCategoryBySlug(segment);
     if (category) {
-      const products = listProductsByCategory(segment);
+      const products = listProductsByCategory(segment).map(withStockView);
       return <CategoryListingPage category={category} products={products} />;
     }
     const product = getProductDetailBySlug(segment);
@@ -89,7 +90,7 @@ export default async function CatalogRoutePage({ params }) {
       const path = `/${parentSlug}/${childSegment}`;
       const mega = findMegaMenuLinkByHref(path);
       const subName = mega?.label ?? humanizePathSegment(childSegment);
-      const products = listProductsByCategory(parentSlug);
+      const products = listProductsByCategory(parentSlug).map(withStockView);
       return (
         <CategoryListingPage
           category={{ name: subName, slug: `${parentSlug}/${childSegment}` }}

@@ -3,10 +3,13 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
+import { toast } from "sonner";
 import { CartQuantityInput } from "@/components/CartQuantityInput";
 import {
   changeCartLinePurchaseSize,
+  clearCart,
   closeCartDrawer,
   decrementCartLine,
   incrementCartLine,
@@ -149,12 +152,14 @@ function CartLineRow({ line }) {
 
 export function CartDrawer() {
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const open = useAppSelector(selectCartDrawerOpen);
   const items = useAppSelector(selectCartItems);
   const count = useAppSelector(selectCartCount);
   const subtotal = useAppSelector(selectCartSubtotal);
   /** Avoid hydration mismatch: SSR + first client paint match `null`; portal only after mount. */
   const [mounted, setMounted] = useState(false);
+  const [checkoutBusy, setCheckoutBusy] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -177,6 +182,49 @@ export function CartDrawer() {
     }
     return () => document.documentElement.classList.remove("overflow-hidden");
   }, [open]);
+
+  async function handleCheckoutAndPay() {
+    if (items.length === 0) return;
+    setCheckoutBusy(true);
+    try {
+      const res = await fetch("/api/cart/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map((i) => ({
+            slug: i.slug,
+            sku: i.sku,
+            purchaseSize: i.purchaseSize,
+            quantity: i.quantity,
+          })),
+        }),
+      });
+      let data = {};
+      try {
+        data = await res.json();
+      } catch {
+        /* ignore */
+      }
+      if (!res.ok) {
+        toast.error(
+          typeof data.message === "string"
+            ? data.message
+            : typeof data.error === "string"
+              ? data.error
+              : "Checkout failed",
+        );
+        return;
+      }
+      toast.success("Payment complete — inventory updated");
+      dispatch(clearCart());
+      dispatch(closeCartDrawer());
+      router.refresh();
+    } catch {
+      toast.error("Network error — try again");
+    } finally {
+      setCheckoutBusy(false);
+    }
+  }
 
   if (!mounted) return null;
 
@@ -259,9 +307,10 @@ export function CartDrawer() {
           <button
             type="button"
             className="mt-4 w-full rounded-xl bg-[#0f172a] py-3 text-center text-sm font-bold uppercase tracking-wide text-white transition-colors hover:bg-[#1e293b] focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:mt-5 sm:py-3.5"
-            disabled={items.length === 0}
+            disabled={items.length === 0 || checkoutBusy}
+            onClick={() => void handleCheckoutAndPay()}
           >
-            Proceed to Checkout
+            {checkoutBusy ? "Processing…" : "Checkout & pay"}
           </button>
         </footer>
       </aside>

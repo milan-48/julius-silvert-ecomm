@@ -157,6 +157,7 @@ export function CategoryListingClient({ products }) {
                       footerMode={p.footerMode}
                       sizeOptions={p.sizeOptions}
                       defaultSize={p.defaultSize}
+                      stock={p.stock}
                     />
                   </li>
                 ))}

@@ -53,6 +53,7 @@ export function CenterPlateProteinsSection({ products = [] }) {
               footerMode={p.footerMode}
               sizeOptions={p.sizeOptions}
               defaultSize={p.defaultSize}
+              stock={p.stock}
             />
           ))}
         </div>
