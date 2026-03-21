@@ -28,9 +28,11 @@ No images required. Text links only.
 
 | File Name | Description | Export Settings |
 |-----------|--------------|-----------------|
-| **`hero-artichokes.jpg`** | Full-width artichokes background photo | 1920×1080 px minimum, high quality (80–90%), format: JPG |
+| **`assets/herosection.png`** | Full-width hero photo (e.g. artichokes) | High quality PNG or WebP; wide aspect (~2:1) works well |
 
-**Required for pixel-perfect design.** A placeholder exists; replace with your Figma export.
+Place hero imagery under **`/public/assets/`** (not the repo root). The app references **`/assets/herosection.png`**.
+
+Legacy **`hero-artichokes.jpg`** is optional if you prefer JPG; update `Hero.js` `src` if you switch.
 
 ---
 
@@ -43,5 +45,5 @@ No images required. Text labels only (Beef, Pork, Poultry, etc.).
 
 | Priority | File | Section |
 |----------|------|---------|
-| **Required** | `hero-artichokes.jpg` | Hero |
+| **Required** | `assets/herosection.png` | Hero |
 | Optional | `logo.svg` | Header |
