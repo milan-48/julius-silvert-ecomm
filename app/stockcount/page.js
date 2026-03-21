@@ -159,6 +159,141 @@ function buildUpdates(products, draft) {
   return updates;
 }
 
+/** Mobile channels: fixed label width so Case / PC inputs share one column */
+const CHANNEL_ROW_GRID =
+  "grid w-full grid-cols-[5.5rem_4.5rem_minmax(0,1fr)] items-center gap-x-3";
+
+/**
+ * @param {{
+ *   product: object;
+ *   draft: { case?: number; pc?: number; single?: number };
+ *   setChannel: (slug: string, product: object, partial: object) => void;
+ *   mobile?: boolean;
+ * }} props
+ */
+function StockChannelsCell({ product: p, draft: d, setChannel, mobile = false }) {
+  if (p.hasCasePc) {
+    if (mobile) {
+      return (
+        <div className="flex flex-col gap-3">
+          <div className={CHANNEL_ROW_GRID}>
+            <span className="select-none text-right text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+              Case
+            </span>
+            <input
+              className={`${inputClass} shrink-0 justify-self-start`}
+              value={String(d.case)}
+              onChange={(e) =>
+                setChannel(p.slug, p, {
+                  case: Number(e.target.value.replace(/\D/g, "")) || 0,
+                })
+              }
+              aria-label={`${p.title} case stock`}
+            />
+            <div className="min-w-0 justify-self-start">
+              <StatusPill status={p.stockStatus?.case} />
+            </div>
+          </div>
+          <div className={CHANNEL_ROW_GRID}>
+            <span className="select-none text-right text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+              PC
+            </span>
+            <input
+              className={`${inputClass} shrink-0 justify-self-start`}
+              value={String(d.pc)}
+              onChange={(e) =>
+                setChannel(p.slug, p, {
+                  pc: Number(e.target.value.replace(/\D/g, "")) || 0,
+                })
+              }
+              aria-label={`${p.title} PC stock`}
+            />
+            <div className="min-w-0 justify-self-start">
+              <StatusPill status={p.stockStatus?.pc} />
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-x-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+            Case
+          </span>
+          <input
+            className={inputClass}
+            value={String(d.case)}
+            onChange={(e) =>
+              setChannel(p.slug, p, {
+                case: Number(e.target.value.replace(/\D/g, "")) || 0,
+              })
+            }
+            aria-label={`${p.title} case stock`}
+          />
+          <StatusPill status={p.stockStatus?.case} />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+            PC
+          </span>
+          <input
+            className={inputClass}
+            value={String(d.pc)}
+            onChange={(e) =>
+              setChannel(p.slug, p, {
+                pc: Number(e.target.value.replace(/\D/g, "")) || 0,
+              })
+            }
+            aria-label={`${p.title} PC stock`}
+          />
+          <StatusPill status={p.stockStatus?.pc} />
+        </div>
+      </div>
+    );
+  }
+  if (mobile) {
+    return (
+      <div className={CHANNEL_ROW_GRID}>
+        <span className="select-none text-right text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+          Single
+        </span>
+        <input
+          className={`${inputClass} shrink-0 justify-self-start`}
+          value={String(d.single)}
+          onChange={(e) =>
+            setChannel(p.slug, p, {
+              single: Number(e.target.value.replace(/\D/g, "")) || 0,
+            })
+          }
+          aria-label={`${p.title} single stock`}
+        />
+        <div className="min-w-0 justify-self-start">
+          <StatusPill status={p.stockStatus?.single} />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+        Single
+      </span>
+      <input
+        className={inputClass}
+        value={String(d.single)}
+        onChange={(e) =>
+          setChannel(p.slug, p, {
+            single: Number(e.target.value.replace(/\D/g, "")) || 0,
+          })
+        }
+        aria-label={`${p.title} single stock`}
+      />
+      <StatusPill status={p.stockStatus?.single} />
+    </div>
+  );
+}
+
 function PinSaveModal({
   open,
   pin,
@@ -537,186 +672,192 @@ function StockCountPageClient() {
         <p className="mt-10 text-sm text-neutral-500">Loading inventory…</p>
       ) : (
         <div className="mt-6 overflow-hidden rounded-xl border border-neutral-200 shadow-sm">
-          <div className="overflow-x-auto">
-            <div className="flex min-w-[920px] flex-col">
-              <table className="w-full table-fixed border-collapse text-left text-sm">
-                <StockColgroup />
-                <thead>
-                  <tr className="border-b border-neutral-200 bg-neutral-50">
-                    <th className="px-3 py-3 text-left font-semibold text-neutral-800">
-                      Category
-                    </th>
-                    <th className="px-3 py-3 text-left font-semibold text-neutral-800">
-                      SKU
-                    </th>
-                    <th className="px-3 py-3 text-left font-semibold text-neutral-800">
-                      Product
-                    </th>
-                    <th className="px-3 py-3 text-left font-semibold text-neutral-800">
-                      Channels
-                    </th>
-                    <th className="px-3 py-3 text-left font-semibold text-neutral-800">
-                      Link
-                    </th>
-                  </tr>
-                </thead>
-              </table>
-              <div
-                className="max-h-[min(28rem,60dvh)] overflow-y-auto overflow-x-hidden overscroll-y-contain outline-none [-webkit-overflow-scrolling:touch] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500/30"
-                style={{ scrollbarGutter: "stable" }}
-                role="region"
-                aria-label="Stock table rows — scroll vertically"
-                tabIndex={0}
-              >
+          <div
+            className="lg:hidden"
+            role="region"
+            aria-label="Stock list — mobile"
+          >
+            <div
+              className="max-h-[min(28rem,60dvh)] overflow-y-auto overscroll-y-contain px-4 py-2 outline-none [-webkit-overflow-scrolling:touch] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500/30"
+              tabIndex={0}
+            >
+              {filtered.length === 0 ? (
+                <p className="py-12 text-center text-sm text-neutral-500">
+                  {debouncedSearch
+                    ? "No SKUs or products match your search."
+                    : "No items match these filters."}
+                </p>
+              ) : (
+                <ul className="divide-y divide-neutral-100">
+                  {filtered.map((p) => {
+                    const d = rowDraftFor(p, draft);
+                    return (
+                      <li key={p.slug} className="py-4 first:pt-3">
+                        <div className="flex flex-col gap-3.5">
+                          <div className="flex flex-col gap-3">
+                            <div>
+                              <span className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+                                Category
+                              </span>
+                              <p className="mt-1 text-sm leading-snug text-neutral-800">
+                                {categoryLabel(p.categorySlug)}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+                                SKU
+                              </span>
+                              <p className="mt-1 break-all font-mono text-sm tabular-nums leading-snug text-neutral-900">
+                                {p.sku}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+                                Product
+                              </span>
+                              <p className="mt-1 text-sm leading-snug text-neutral-800">
+                                {p.title}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="rounded-lg border border-neutral-200/90 bg-neutral-50/80 px-3 py-3">
+                            <span className="mb-3 block text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+                              Channels
+                            </span>
+                            <StockChannelsCell
+                              product={p}
+                              draft={d}
+                              setChannel={setChannel}
+                              mobile
+                            />
+                          </div>
+                          <Link
+                            href={`/${p.slug}`}
+                            className="text-sm font-medium text-blue-600 hover:underline"
+                          >
+                            View product →
+                          </Link>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
+
+          <div className="hidden lg:block">
+            <div className="overflow-x-auto">
+              <div className="flex min-w-[920px] flex-col">
                 <table className="w-full table-fixed border-collapse text-left text-sm">
                   <StockColgroup />
-                  <tbody>
-                    {filtered.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={5}
-                          className="px-4 py-12 text-center text-sm text-neutral-500"
-                        >
-                          {debouncedSearch
-                            ? "No SKUs or products match your search."
-                            : "No items match these filters."}
-                        </td>
-                      </tr>
-                    ) : (
-                      filtered.map((p) => {
-                        const d = rowDraftFor(p, draft);
-                        return (
-                          <tr
-                            key={p.slug}
-                            className="border-b border-neutral-100 hover:bg-neutral-50/80"
-                          >
-                            <td className={STOCK_TABLE_TEXT_CELL}>
-                              <span className="line-clamp-2">
-                                {categoryLabel(p.categorySlug)}
-                              </span>
-                            </td>
-                            <td
-                              className={`${STOCK_TABLE_TEXT_CELL} whitespace-nowrap tabular-nums`}
-                            >
-                              {p.sku}
-                            </td>
-                            <td className={STOCK_TABLE_TEXT_CELL}>
-                              <span className="line-clamp-2">{p.title}</span>
-                            </td>
-                            <td className="min-w-0 px-3 py-2.5 align-top">
-                              {p.hasCasePc ? (
-                                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-x-4">
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <span className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
-                                      Case
-                                    </span>
-                                    <input
-                                      className={inputClass}
-                                      value={String(d.case)}
-                                      onChange={(e) =>
-                                        setChannel(p.slug, p, {
-                                          case:
-                                            Number(
-                                              e.target.value.replace(
-                                                /\D/g,
-                                                "",
-                                              ),
-                                            ) || 0,
-                                        })
-                                      }
-                                      aria-label={`${p.title} case stock`}
-                                    />
-                                    <StatusPill
-                                      status={p.stockStatus?.case}
-                                    />
-                                  </div>
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <span className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
-                                      PC
-                                    </span>
-                                    <input
-                                      className={inputClass}
-                                      value={String(d.pc)}
-                                      onChange={(e) =>
-                                        setChannel(p.slug, p, {
-                                          pc:
-                                            Number(
-                                              e.target.value.replace(
-                                                /\D/g,
-                                                "",
-                                              ),
-                                            ) || 0,
-                                        })
-                                      }
-                                      aria-label={`${p.title} PC stock`}
-                                    />
-                                    <StatusPill status={p.stockStatus?.pc} />
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
-                                    Single
-                                  </span>
-                                  <input
-                                    className={inputClass}
-                                    value={String(d.single)}
-                                    onChange={(e) =>
-                                      setChannel(p.slug, p, {
-                                        single:
-                                          Number(
-                                            e.target.value.replace(
-                                              /\D/g,
-                                              "",
-                                            ),
-                                          ) || 0,
-                                      })
-                                    }
-                                    aria-label={`${p.title} single stock`}
-                                  />
-                                  <StatusPill
-                                    status={p.stockStatus?.single}
-                                  />
-                                </div>
-                              )}
-                            </td>
-                            <td className="whitespace-nowrap px-3 py-2.5 align-top">
-                              <Link
-                                href={`/${p.slug}`}
-                                className="text-xs font-medium text-blue-600 hover:underline"
-                              >
-                                View
-                              </Link>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
+                  <thead>
+                    <tr className="border-b border-neutral-200 bg-neutral-50">
+                      <th className="px-3 py-3 text-left font-semibold text-neutral-800">
+                        Category
+                      </th>
+                      <th className="px-3 py-3 text-left font-semibold text-neutral-800">
+                        SKU
+                      </th>
+                      <th className="px-3 py-3 text-left font-semibold text-neutral-800">
+                        Product
+                      </th>
+                      <th className="px-3 py-3 text-left font-semibold text-neutral-800">
+                        Channels
+                      </th>
+                      <th className="px-3 py-3 text-left font-semibold text-neutral-800">
+                        Link
+                      </th>
+                    </tr>
+                  </thead>
                 </table>
-              </div>
-
-              <div className="flex flex-col gap-3 border-t border-neutral-200 bg-neutral-50/95 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs text-neutral-600">
-                  {hasPending
-                    ? `${pendingUpdates.length} unsaved — Save applies all changes with PIN.`
-                    : "No pending changes."}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!hasPending) return;
-                    setPinModalError(null);
-                    setPin("");
-                    setPinOpen(true);
-                  }}
-                  disabled={!hasPending || loading}
-                  className="shrink-0 rounded-lg bg-[#0f172a] px-4 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
+                <div
+                  className="max-h-[min(28rem,60dvh)] overflow-y-auto overflow-x-hidden overscroll-y-contain outline-none [-webkit-overflow-scrolling:touch] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500/30"
+                  style={{ scrollbarGutter: "stable" }}
+                  role="region"
+                  aria-label="Stock table rows — scroll vertically"
+                  tabIndex={0}
                 >
-                  Save{hasPending ? ` (${pendingUpdates.length})` : ""}
-                </button>
+                  <table className="w-full table-fixed border-collapse text-left text-sm">
+                    <StockColgroup />
+                    <tbody>
+                      {filtered.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={5}
+                            className="px-4 py-12 text-center text-sm text-neutral-500"
+                          >
+                            {debouncedSearch
+                              ? "No SKUs or products match your search."
+                              : "No items match these filters."}
+                          </td>
+                        </tr>
+                      ) : (
+                        filtered.map((p) => {
+                          const d = rowDraftFor(p, draft);
+                          return (
+                            <tr
+                              key={p.slug}
+                              className="border-b border-neutral-100 hover:bg-neutral-50/80"
+                            >
+                              <td className={STOCK_TABLE_TEXT_CELL}>
+                                <span className="line-clamp-2">
+                                  {categoryLabel(p.categorySlug)}
+                                </span>
+                              </td>
+                              <td
+                                className={`${STOCK_TABLE_TEXT_CELL} whitespace-nowrap tabular-nums`}
+                              >
+                                {p.sku}
+                              </td>
+                              <td className={STOCK_TABLE_TEXT_CELL}>
+                                <span className="line-clamp-2">{p.title}</span>
+                              </td>
+                              <td className="min-w-0 px-3 py-2.5 align-top">
+                                <StockChannelsCell
+                                  product={p}
+                                  draft={d}
+                                  setChannel={setChannel}
+                                />
+                              </td>
+                              <td className="whitespace-nowrap px-3 py-2.5 align-top">
+                                <Link
+                                  href={`/${p.slug}`}
+                                  className="text-xs font-medium text-blue-600 hover:underline"
+                                >
+                                  View
+                                </Link>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
+          </div>
+
+          <div className="flex flex-col gap-3 border-t border-neutral-200 bg-neutral-50/95 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-neutral-600">
+              {hasPending
+                ? `${pendingUpdates.length} unsaved — Save applies all changes with PIN.`
+                : "No pending changes."}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                if (!hasPending) return;
+                setPinModalError(null);
+                setPin("");
+                setPinOpen(true);
+              }}
+              disabled={!hasPending || loading}
+              className="shrink-0 rounded-lg bg-[#0f172a] px-4 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Save{hasPending ? ` (${pendingUpdates.length})` : ""}
+            </button>
           </div>
         </div>
       )}
