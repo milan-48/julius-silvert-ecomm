@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { CategoryGrid } from "@/components/CategoryGrid";
 import { NewArrivalsSection } from "@/components/NewArrivalsSection";
+import { CenterPlateProteinsSection } from "@/components/CenterPlateProteinsSection";
 import { PromoBannersCarousel } from "@/components/PromoBannersCarousel";
 
 export default function Home() {
@@ -24,6 +25,7 @@ export default function Home() {
         <CategoryGrid />
         <NewArrivalsSection />
         <PromoBannersCarousel />
+        <CenterPlateProteinsSection />
       </main>
     </div>
   );
