@@ -26,13 +26,9 @@ No images required. Text links only.
 
 ## Section 4: Hero Section
 
-| File Name | Description | Export Settings |
-|-----------|--------------|-----------------|
-| **`assets/herosection.png`** | Full-width hero photo (e.g. artichokes) | High quality PNG or WebP; wide aspect (~2:1) works well |
+**Default:** Hero carousel images are **`imageSrc` URLs** in `lib/constants.js` (`HOME_HERO_SLIDES`) — Unsplash placeholders so the site works with **no files in `/public`**. `next.config.mjs` allows `images.unsplash.com`.
 
-Place hero imagery under **`/public/assets/`** (not the repo root). The app references **`/assets/herosection.png`**.
-
-Legacy **`hero-artichokes.jpg`** is optional if you prefer JPG; update `Hero.js` `src` if you switch.
+**Optional — your brand photography:** Replace any slide’s `imageSrc` with a path under `/public` (e.g. `/assets/my-hero.webp`) and export a wide shot (~1920px+ on the long edge).
 
 ---
 
@@ -45,5 +41,6 @@ No images required. Text labels only (Beef, Pork, Poultry, etc.).
 
 | Priority | File | Section |
 |----------|------|---------|
-| **Required** | `assets/herosection.png` | Hero |
+| — | *(none required for hero)* | Hero uses Unsplash URLs in `constants.js` |
 | Optional | `logo.svg` | Header |
+| Optional | Custom hero/promo assets | Replace `imageSrc` in `constants.js` |

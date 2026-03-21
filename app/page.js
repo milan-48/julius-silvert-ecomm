@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { CategoryGrid } from "@/components/CategoryGrid";
 import { NewArrivalsSection } from "@/components/NewArrivalsSection";
+import { PromoBannersCarousel } from "@/components/PromoBannersCarousel";
 
 export default function Home() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -22,6 +23,7 @@ export default function Home() {
         <Hero />
         <CategoryGrid />
         <NewArrivalsSection />
+        <PromoBannersCarousel />
       </main>
     </div>
   );

@@ -12,7 +12,7 @@ import {
 export function NewArrivalsSection() {
   return (
     <section
-      className="bg-white py-10 sm:py-14 lg:py-16"
+      className="bg-white pt-10 pb-6 sm:pt-14 sm:pb-8 lg:pt-16 lg:pb-10"
       aria-labelledby="new-arrivals-heading"
     >
       <div className="mx-auto w-full min-w-0 max-w-[1600px] px-4 sm:px-6 lg:px-8">
