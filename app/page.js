@@ -5,6 +5,7 @@ import { AnnouncementBar } from "@/components/AnnouncementBar";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { CategoryGrid } from "@/components/CategoryGrid";
+import { NewArrivalsSection } from "@/components/NewArrivalsSection";
 
 export default function Home() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -20,6 +21,7 @@ export default function Home() {
       <main className="flex-1">
         <Hero />
         <CategoryGrid />
+        <NewArrivalsSection />
       </main>
     </div>
   );

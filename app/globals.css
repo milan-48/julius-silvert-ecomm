@@ -101,6 +101,27 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Pointer on real interactives (Tailwind preflight leaves buttons as default on some setups) */
+a[href],
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+[role="tab"]:not([aria-disabled="true"]),
+[role="radio"],
+label[for] {
+  cursor: pointer;
+}
+
+input[type="submit"]:not(:disabled),
+input[type="button"]:not(:disabled),
+input[type="reset"]:not(:disabled) {
+  cursor: pointer;
+}
+
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
 /* --- Typography utility classes (use semantic tokens) --- */
 .text-announcement {
   font-size: var(--text-sm);
@@ -402,6 +423,18 @@ body {
 }
 
 .category-carousel-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+/* Product card — many size options; hide scrollbar, keep swipe */
+.product-size-options-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.product-size-options-scroll::-webkit-scrollbar {
   display: none;
 }
 
