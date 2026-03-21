@@ -13,6 +13,7 @@ import { persistToggleWishlistItem } from "@/lib/store/wishlistThunks";
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
 import { CartQuantityInput } from "@/components/CartQuantityInput";
 import { RequistionIcon } from "@/lib/icons";
+import { RequisitionPickModal } from "@/components/requisitions/RequisitionPickModal";
 import { LOW_STOCK_THRESHOLD } from "@/lib/memoryDb/stockUtils";
 import {
   availableUnitsForPurchase,
@@ -73,6 +74,7 @@ export function ProductCard({
     () => defaultSize ?? sizeOptions?.[0]?.value ?? "case",
   );
   const [imageFailed, setImageFailed] = useState(false);
+  const [requisitionOpen, setRequisitionOpen] = useState(false);
 
   const productHref = `/${slug}`;
   const placeholderBg = useMemo(() => softPlaceholderBg(slug), [slug]);
@@ -184,6 +186,34 @@ export function ProductCard({
       }),
     );
   }
+
+  const requisitionProduct = useMemo(
+    () => ({
+      sku: lineSku,
+      slug,
+      title,
+      imageSrc: imageSrc ?? "",
+      purchaseSize: purchaseSizeKey,
+      quantity: 1,
+      unitPrice: resolved.price,
+      unitLabel: resolved.unitPrice,
+      netWeight: resolved.netWeight,
+      sizeOptions: sizeOptions?.length > 1 ? sizeOptions : undefined,
+      priceBySize: priceBySize ?? undefined,
+    }),
+    [
+      lineSku,
+      slug,
+      title,
+      imageSrc,
+      purchaseSizeKey,
+      resolved.price,
+      resolved.unitPrice,
+      resolved.netWeight,
+      sizeOptions,
+      priceBySize,
+    ],
+  );
 
   return (
     <article className="flex h-full flex-col overflow-visible rounded-xl border border-neutral-200/90 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
@@ -396,15 +426,27 @@ export function ProductCard({
           )}
           <button
             type="button"
-            disabled={outOfStock}
-            className="flex h-11 min-h-11 w-12 shrink-0 touch-manipulation items-center justify-center rounded-lg border border-transparent text-[#6A7282] transition-colors [-webkit-tap-highlight-color:transparent] hover:bg-neutral-100/90 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 active:bg-neutral-100 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:bg-neutral-50 disabled:text-neutral-400 disabled:hover:bg-neutral-50 sm:h-10 sm:min-h-0 sm:w-11"
+            className="flex h-11 min-h-11 w-12 shrink-0 touch-manipulation items-center justify-center rounded-lg border border-transparent text-[#6A7282] transition-colors [-webkit-tap-highlight-color:transparent] hover:bg-neutral-100/90 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 active:bg-neutral-100 hover:text-neutral-900 sm:h-10 sm:min-h-0 sm:w-11"
             aria-label="Add to requisition list"
-            onClick={(e) => e.stopPropagation()}
+            title={
+              outOfStock
+                ? "Save to a requisition list (available even when out of stock)"
+                : undefined
+            }
+            onClick={(e) => {
+              e.stopPropagation();
+              setRequisitionOpen(true);
+            }}
           >
             <RequistionIcon color="currentColor" width={28} height={28} />
           </button>
         </div>
       </div>
+      <RequisitionPickModal
+        open={requisitionOpen}
+        onClose={() => setRequisitionOpen(false)}
+        product={requisitionProduct}
+      />
     </article>
   );
 }

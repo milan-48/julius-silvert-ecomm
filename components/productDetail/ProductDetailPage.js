@@ -19,6 +19,7 @@ import { selectWishlistHasSku } from "@/lib/store/wishlistSlice";
 import { persistToggleWishlistItem } from "@/lib/store/wishlistThunks";
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
 import { CartQuantityInput } from "@/components/CartQuantityInput";
+import { RequisitionPickModal } from "@/components/requisitions/RequisitionPickModal";
 import { YouMayAlsoLike } from "./YouMayAlsoLike";
 
 const ICON_STROKE = 1.75;
@@ -99,6 +100,7 @@ export function ProductDetailPage({ product }) {
   const [selectedSize, setSelectedSize] = useState(defaultSize);
   const [tab, setTab] = useState("description");
   const [failedIdx, setFailedIdx] = useState(() => new Set());
+  const [requisitionOpen, setRequisitionOpen] = useState(false);
 
   const placeholderBg = useMemo(() => softPlaceholderBg(slug), [slug]);
 
@@ -176,6 +178,35 @@ export function ProductDetailPage({ product }) {
       }),
     );
   }
+
+  const requisitionProduct = useMemo(
+    () => ({
+      sku,
+      slug,
+      title,
+      imageSrc: galleryImages[0] ?? "",
+      purchaseSize: purchaseSizeKey,
+      quantity: 1,
+      unitPrice: resolved.price,
+      unitLabel: resolved.unitPrice,
+      netWeight: resolved.netWeight,
+      sizeOptions: showSizePicker ? sizeOptions : undefined,
+      priceBySize: priceBySize ?? undefined,
+    }),
+    [
+      sku,
+      slug,
+      title,
+      galleryImages,
+      purchaseSizeKey,
+      resolved.price,
+      resolved.unitPrice,
+      resolved.netWeight,
+      showSizePicker,
+      sizeOptions,
+      priceBySize,
+    ],
+  );
 
   const mainSrc = galleryImages[activeIdx] ?? "";
   const mainAlt = galleryAlts[activeIdx] ?? title;
@@ -285,7 +316,7 @@ export function ProductDetailPage({ product }) {
                 </div>
               ) : null}
             </div>
-            <div className="flex gap-2 overflow-x-auto pb-1 sm:gap-3">
+            <div className="flex gap-2 overflow-x-auto px-0.5 pb-1 pt-0.5 sm:gap-3">
               {galleryImages.map((src, i) => {
                 const sel = i === activeIdx;
                 const failed = failedIdx.has(i);
@@ -294,32 +325,37 @@ export function ProductDetailPage({ product }) {
                     key={`${src}-${i}`}
                     type="button"
                     onClick={() => setActiveIdx(i)}
-                    className={`relative h-16 w-20 shrink-0 overflow-hidden rounded-lg ring-2 transition-shadow sm:h-[4.5rem] sm:w-24 ${
-                      sel
-                        ? "ring-neutral-900 shadow-md"
-                        : "ring-transparent hover:ring-neutral-300"
-                    }`}
+                    className="shrink-0 rounded-lg border-0 bg-transparent p-0"
                     aria-label={`Show image ${i + 1}`}
                     aria-current={sel ? "true" : undefined}
                   >
-                    {!src || failed ? (
-                      <div
-                        className="absolute inset-0"
-                        style={{ backgroundColor: placeholderBg }}
-                        aria-hidden
-                      />
-                    ) : (
-                      <Image
-                        src={src}
-                        alt=""
-                        fill
-                        className="object-cover"
-                        sizes="96px"
-                        onError={() =>
-                          setFailedIdx((s) => new Set(s).add(i))
-                        }
-                      />
-                    )}
+                    {/* Border (not ring): ring/box-shadow is clipped by overflow-x-auto on the row */}
+                    <span
+                      className={`relative box-border block h-16 w-20 overflow-hidden rounded-lg border-2 transition-[border-color] sm:h-[4.5rem] sm:w-24 ${
+                        sel
+                          ? "border-neutral-900"
+                          : "border-transparent hover:border-neutral-300"
+                      }`}
+                    >
+                      {!src || failed ? (
+                        <div
+                          className="absolute inset-0"
+                          style={{ backgroundColor: placeholderBg }}
+                          aria-hidden
+                        />
+                      ) : (
+                        <Image
+                          src={src}
+                          alt=""
+                          fill
+                          className="object-cover"
+                          sizes="96px"
+                          onError={() =>
+                            setFailedIdx((s) => new Set(s).add(i))
+                          }
+                        />
+                      )}
+                    </span>
                   </button>
                 );
               })}
@@ -475,15 +511,26 @@ export function ProductDetailPage({ product }) {
               )}
               <button
                 type="button"
-                disabled={lineOutOfStock}
-                className="flex h-12 min-h-12 w-14 shrink-0 items-center justify-center rounded-lg border border-neutral-200 text-neutral-600 transition-colors hover:bg-neutral-50 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex h-12 min-h-12 w-14 shrink-0 items-center justify-center rounded-lg border border-neutral-200 text-neutral-600 transition-colors hover:bg-neutral-50 hover:text-neutral-800 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500"
                 aria-label="Add to requisition list"
+                title={
+                  lineOutOfStock
+                    ? "Save to a requisition list (available even when out of stock)"
+                    : undefined
+                }
+                onClick={() => setRequisitionOpen(true)}
               >
                 <RequistionIcon color="currentColor" width={28} height={28} />
               </button>
             </div>
           </div>
         </div>
+
+        <RequisitionPickModal
+          open={requisitionOpen}
+          onClose={() => setRequisitionOpen(false)}
+          product={requisitionProduct}
+        />
 
         {/* Tabs — single hairline under tab row only (#EAECF0); no extra top border */}
         <div className="mt-14 sm:mt-16">

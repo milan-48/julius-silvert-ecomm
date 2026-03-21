@@ -63,6 +63,12 @@ function CartLineRow({ line }) {
           <span className="font-medium text-neutral-500"> ({sz})</span>
         ) : null}
       </p>
+      <p className="mt-0.5 pr-5 text-[11px] leading-snug text-neutral-500 sm:text-xs">
+        <span className="font-medium text-neutral-600">Item#:</span>{" "}
+        <span className="tabular-nums text-neutral-700">
+          {line.sku || line.slug}
+        </span>
+      </p>
       {/* Unit price + line total on one row */}
       <div className="mt-1 flex items-baseline justify-between gap-2 border-b border-neutral-200/60 pb-2">
         <p className="min-w-0 flex-1 truncate text-[11px] leading-snug text-neutral-500 sm:text-xs">
