@@ -9,7 +9,7 @@ export default async function CatalogPlaceholderPage({ params }) {
   const path = Array.isArray(slug) ? slug.join("/") : String(slug ?? "");
 
   return (
-    <main className="flex-1 bg-white">
+    <div className="bg-white">
       <div className="site-container py-16 sm:py-24">
         <p className="text-sm font-medium text-neutral-500">Catalog</p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-neutral-900">
@@ -28,6 +28,6 @@ export default async function CatalogPlaceholderPage({ params }) {
           ← Back to home
         </Link>
       </div>
-    </main>
+    </div>
   );
 }

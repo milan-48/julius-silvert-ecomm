@@ -93,23 +93,25 @@ export function CategoryCarousel({ categories }) {
   }, [onScroll]);
 
   return (
-    <div className="w-full min-w-0 max-w-full">
+    <div className="flex w-full min-w-0 max-w-full flex-col items-center">
       <div
         ref={scrollerRef}
-        className="category-carousel-scroller flex w-full min-w-0 max-w-full snap-x snap-mandatory overflow-x-auto py-3 sm:py-3"
+        className="category-carousel-scroller flex w-full min-w-0 max-w-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain py-3 sm:py-3"
         aria-label="Shop by category"
       >
         {pages.map((chunk, pageIndex) => (
           <div
             key={pageIndex}
-            className="box-border max-w-full shrink-0 snap-start snap-always px-0.5 [flex:0_0_100%] [width:100%]"
+            className="box-border flex w-full min-w-full max-w-full shrink-0 snap-start snap-always justify-center px-0 [flex:0_0_100%]"
           >
-            <div className="flex min-w-0 max-w-full items-stretch gap-3 sm:gap-4 lg:gap-5">
+            <div
+              className="grid w-full min-w-0 max-w-full items-stretch gap-3 sm:gap-4 lg:gap-5"
+              style={{
+                gridTemplateColumns: `repeat(${chunk.length}, minmax(0, 1fr))`,
+              }}
+            >
               {chunk.map((category, i) => (
-                <div
-                  key={category.slug}
-                  className="flex min-h-0 min-w-0 flex-1 basis-0"
-                >
+                <div key={category.slug} className="min-h-0 min-w-0">
                   <CategoryCard
                     name={category.name}
                     count={category.count}
@@ -125,25 +127,31 @@ export function CategoryCarousel({ categories }) {
 
       {pageCount > 1 ? (
         <div
-          className="mt-7 flex w-full min-w-0 items-center justify-center gap-2.5 px-1"
+          className="mt-7 flex w-full min-w-0 justify-center px-0"
           role="tablist"
           aria-label="Category pages"
         >
-          {pages.map((_, i) => (
-            <button
-              key={i}
-              type="button"
-              role="tab"
-              aria-selected={i === page}
-              aria-label={`Show categories page ${i + 1} of ${pageCount}`}
-              className={`h-2.5 rounded-full border transition-[width,background-color,border-color] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-500 ${
-                i === page
-                  ? "w-9 border-neutral-700 bg-neutral-800"
-                  : "w-2.5 border-neutral-300/80 bg-white hover:border-neutral-400 hover:bg-neutral-100"
-              }`}
-              onClick={() => scrollToPage(i)}
-            />
-          ))}
+          <div className="flex items-center gap-2.5">
+            {pages.map((_, i) => (
+              <div
+                key={i}
+                className="flex h-2.5 w-9 shrink-0 items-center justify-center"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={i === page}
+                  aria-label={`Show categories page ${i + 1} of ${pageCount}`}
+                  className={`rounded-full border transition-[width,background-color,border-color] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-500 ${
+                    i === page
+                      ? "h-2.5 w-9 border-neutral-700 bg-neutral-800"
+                      : "h-2.5 w-2.5 border-neutral-300/80 bg-white hover:border-neutral-400 hover:bg-neutral-100"
+                  }`}
+                  onClick={() => scrollToPage(i)}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       ) : null}
     </div>
