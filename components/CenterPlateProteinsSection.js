@@ -7,12 +7,12 @@ import {
 } from "@/lib/constants";
 
 /**
- * Homepage “Center of the Plate Proteins” — horizontal scroll on small screens, 4-up grid on lg.
+ * Homepage “Center of the Plate Proteins” — same responsive grid as `NewArrivalsSection`.
  */
 export function CenterPlateProteinsSection() {
   return (
     <section
-      className="bg-white pt-6 pb-6 sm:pt-8 sm:pb-8 lg:pt-10 lg:pb-10"
+      className="bg-white pt-10 pb-6 sm:pt-14 sm:pb-8 lg:pt-16 lg:pb-10"
       aria-labelledby="center-plate-heading"
     >
       <div className="mx-auto w-full min-w-0 max-w-[1600px] px-4 sm:px-6 lg:px-8">
@@ -37,32 +37,24 @@ export function CenterPlateProteinsSection() {
           </Link>
         </div>
 
-        <div
-          className="product-rail-scroller -mx-4 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-1 sm:-mx-6 sm:gap-5 sm:px-6 lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-6 lg:overflow-visible lg:px-0 lg:pb-0 lg:snap-none"
-          role="list"
-        >
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
           {CENTER_PLATE_PRODUCTS.map((p) => (
-            <div
+            <ProductCard
               key={p.id}
-              className="w-[min(85vw,20rem)] shrink-0 snap-start lg:w-auto lg:min-w-0 lg:snap-none"
-              role="listitem"
-            >
-              <ProductCard
-                slug={p.slug}
-                imageSrc={p.imageSrc}
-                imageAlt={p.imageAlt}
-                tier={p.tier}
-                title={p.title}
-                vendor={p.vendor}
-                netWeight={p.netWeight}
-                price={p.price}
-                unitPrice={p.unitPrice}
-                priceBySize={p.priceBySize}
-                footerMode={p.footerMode}
-                sizeOptions={p.sizeOptions}
-                defaultSize={p.defaultSize}
-              />
-            </div>
+              slug={p.slug}
+              imageSrc={p.imageSrc}
+              imageAlt={p.imageAlt}
+              tier={p.tier}
+              title={p.title}
+              vendor={p.vendor}
+              netWeight={p.netWeight}
+              price={p.price}
+              unitPrice={p.unitPrice}
+              priceBySize={p.priceBySize}
+              footerMode={p.footerMode}
+              sizeOptions={p.sizeOptions}
+              defaultSize={p.defaultSize}
+            />
           ))}
         </div>
       </div>
