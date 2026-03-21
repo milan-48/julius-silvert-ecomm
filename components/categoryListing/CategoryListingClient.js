@@ -144,6 +144,7 @@ export function CategoryListingClient({ products }) {
                 {sortedProducts.map((p) => (
                   <li key={p.id} className="min-w-0">
                     <ProductCard
+                      sku={p.sku}
                       slug={p.slug}
                       imageSrc={p.imageSrc}
                       imageAlt={p.imageAlt}

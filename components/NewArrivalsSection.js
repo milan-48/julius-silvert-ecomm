@@ -1,15 +1,14 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { ProductCard } from "./ProductCard";
-import {
-  NEW_ARRIVALS_SECTION,
-  NEW_ARRIVALS_PRODUCTS,
-} from "@/lib/constants";
+import { NEW_ARRIVALS_SECTION } from "@/lib/constants";
 
 /**
- * Homepage product rail — data from `NEW_ARRIVALS_*` in constants (swap for API later).
+ * Homepage product rail — `products` from in-memory catalog (server) or API-shaped rows.
  */
-export function NewArrivalsSection() {
+export function NewArrivalsSection({ products = [] }) {
+  if (!products.length) return null;
+
   return (
     <section
       className="bg-white pt-10 pb-6 sm:pt-14 sm:pb-8 lg:pt-16 lg:pb-10"
@@ -38,9 +37,10 @@ export function NewArrivalsSection() {
         </div>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
-          {NEW_ARRIVALS_PRODUCTS.map((p) => (
+          {products.map((p) => (
             <ProductCard
               key={p.id}
+              sku={p.sku}
               slug={p.slug}
               imageSrc={p.imageSrc}
               imageAlt={p.imageAlt}

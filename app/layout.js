@@ -1,6 +1,8 @@
 import { Inter } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
+import { ReduxProvider } from "@/components/providers/ReduxProvider";
 import "./globals.css";
+import "sonner/dist/styles.css";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -29,7 +31,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full font-sans">
-        <AppShell>{children}</AppShell>
+        <ReduxProvider>
+          <AppShell>{children}</AppShell>
+        </ReduxProvider>
       </body>
     </html>
   );

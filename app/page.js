@@ -4,15 +4,22 @@ import { NewArrivalsSection } from "@/components/NewArrivalsSection";
 import { CenterPlateProteinsSection } from "@/components/CenterPlateProteinsSection";
 import { PromoBannersCarousel } from "@/components/PromoBannersCarousel";
 import { BrandPartnersSection } from "@/components/BrandPartnersSection";
+import {
+  getCenterPlatePool,
+  getNewArrivalsPool,
+} from "@/lib/memoryDb/queries";
 
-export default function Home() {
+export default async function Home() {
+  const newArrivals = getNewArrivalsPool(8);
+  const centerPlate = getCenterPlatePool(8);
+
   return (
     <>
       <Hero />
       <CategoryGrid />
-      <NewArrivalsSection />
+      <NewArrivalsSection products={newArrivals} />
       <PromoBannersCarousel />
-      <CenterPlateProteinsSection />
+      <CenterPlateProteinsSection products={centerPlate} />
       <BrandPartnersSection />
     </>
   );

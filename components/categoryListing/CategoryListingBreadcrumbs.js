@@ -1,9 +1,9 @@
 import Link from "next/link";
 
 /**
- * @param {{ categoryLabel: string }} props
+ * @param {{ categoryLabel: string; parentCategory?: { name: string; slug: string } }} props
  */
-export function CategoryListingBreadcrumbs({ categoryLabel }) {
+export function CategoryListingBreadcrumbs({ categoryLabel, parentCategory }) {
   const label = categoryLabel.toUpperCase();
 
   return (
@@ -23,9 +23,28 @@ export function CategoryListingBreadcrumbs({ categoryLabel }) {
         <li className="text-neutral-400" aria-hidden>
           &gt;
         </li>
-        <li className="text-neutral-800" aria-current="page">
-          {label}
-        </li>
+        {parentCategory ? (
+          <>
+            <li>
+              <Link
+                href={`/${parentCategory.slug}`}
+                className="transition-colors hover:text-neutral-800 focus-visible:outline focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2"
+              >
+                {parentCategory.name.toUpperCase()}
+              </Link>
+            </li>
+            <li className="text-neutral-400" aria-hidden>
+              &gt;
+            </li>
+            <li className="text-neutral-800" aria-current="page">
+              {label}
+            </li>
+          </>
+        ) : (
+          <li className="text-neutral-800" aria-current="page">
+            {label}
+          </li>
+        )}
       </ol>
     </nav>
   );

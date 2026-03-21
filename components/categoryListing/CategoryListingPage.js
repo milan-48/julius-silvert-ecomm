@@ -2,13 +2,20 @@ import { CategoryListingBreadcrumbs } from "./CategoryListingBreadcrumbs";
 import { CategoryListingClient } from "./CategoryListingClient";
 
 /**
- * @param {{ category: { name: string; slug: string }; products: object[] }} props
+ * @param {{
+ *   category: { name: string; slug: string };
+ *   products: object[];
+ *   parentCategory?: { name: string; slug: string };
+ * }} props
  */
-export function CategoryListingPage({ category, products }) {
+export function CategoryListingPage({ category, products, parentCategory }) {
   return (
     <div className="bg-white pb-14 pt-8 sm:pb-16 sm:pt-10 lg:pb-20">
       <div className="site-container">
-        <CategoryListingBreadcrumbs categoryLabel={category.name} />
+        <CategoryListingBreadcrumbs
+          categoryLabel={category.name}
+          parentCategory={parentCategory}
+        />
         <h1 className="mt-4 text-3xl font-bold uppercase tracking-[0.06em] text-neutral-900 sm:mt-5 sm:text-4xl lg:text-[2.35rem] lg:leading-[1.15] uppercase">
           {category.name}
         </h1>

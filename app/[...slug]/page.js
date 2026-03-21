@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { CategoryListingPage } from "@/components/categoryListing/CategoryListingPage";
 import { ProductDetailPage } from "@/components/productDetail/ProductDetailPage";
+import { findCategoryBySlug } from "@/lib/constants";
 import {
-  findCategoryBySlug,
-  getCategoryListingProductPool,
-} from "@/lib/constants";
+  findMegaMenuLinkByHref,
+  humanizePathSegment,
+} from "@/lib/navMegaMenu";
+import { listProductsByCategory } from "@/lib/memoryDb/queries";
 import { getProductDetailBySlug } from "@/lib/productCatalog";
 
 function CatalogPlaceholder({ path }) {
@@ -35,13 +37,31 @@ function CatalogPlaceholder({ path }) {
 export async function generateMetadata({ params }) {
   const { slug } = await params;
   const parts = Array.isArray(slug) ? slug : slug != null ? [String(slug)] : [];
-  if (parts.length !== 1) return {};
-  const product = getProductDetailBySlug(parts[0]);
-  if (!product) return {};
-  return {
-    title: `${product.title} | Julius Silvert`,
-    description: product.tabDescription?.slice(0, 155) ?? undefined,
-  };
+
+  if (parts.length === 1) {
+    const product = getProductDetailBySlug(parts[0]);
+    if (product) {
+      return {
+        title: `${product.title} | Julius Silvert`,
+        description: product.tabDescription?.slice(0, 155) ?? undefined,
+      };
+    }
+  }
+
+  if (parts.length === 2) {
+    const parent = findCategoryBySlug(parts[0]);
+    if (parent) {
+      const path = `/${parts[0]}/${parts[1]}`;
+      const mega = findMegaMenuLinkByHref(path);
+      const subName = mega?.label ?? humanizePathSegment(parts[1]);
+      return {
+        title: `${subName} | ${parent.name} | Julius Silvert`,
+        description: `Shop ${subName} in ${parent.name} at Julius Silvert.`,
+      };
+    }
+  }
+
+  return {};
 }
 
 export default async function CatalogRoutePage({ params }) {
@@ -52,12 +72,34 @@ export default async function CatalogRoutePage({ params }) {
     const segment = parts[0];
     const category = findCategoryBySlug(segment);
     if (category) {
-      const products = getCategoryListingProductPool();
+      const products = listProductsByCategory(segment);
       return <CategoryListingPage category={category} products={products} />;
     }
     const product = getProductDetailBySlug(segment);
     if (product) {
       return <ProductDetailPage product={product} />;
+    }
+  }
+
+  if (parts.length === 2) {
+    const parentSlug = parts[0];
+    const childSegment = parts[1];
+    const parentCategory = findCategoryBySlug(parentSlug);
+    if (parentCategory) {
+      const path = `/${parentSlug}/${childSegment}`;
+      const mega = findMegaMenuLinkByHref(path);
+      const subName = mega?.label ?? humanizePathSegment(childSegment);
+      const products = listProductsByCategory(parentSlug);
+      return (
+        <CategoryListingPage
+          category={{ name: subName, slug: `${parentSlug}/${childSegment}` }}
+          parentCategory={{
+            name: parentCategory.name,
+            slug: parentSlug,
+          }}
+          products={products}
+        />
+      );
     }
   }
 

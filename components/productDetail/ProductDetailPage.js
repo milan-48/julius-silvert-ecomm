@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, Minus, Plus, Star } from "lucide-react";
@@ -8,17 +8,12 @@ import { getRelatedProductsForSlug } from "@/lib/productCatalog";
 import { getPricingForSize } from "@/lib/productPricing";
 import { RequistionIcon } from "@/lib/icons";
 import { softPlaceholderBg } from "@/lib/softPlaceholderColor";
+import { addToCartWithNotification } from "@/lib/store/cartThunks";
+import { decrementCartLine, incrementCartLine } from "@/lib/store/cartSlice";
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
 import { YouMayAlsoLike } from "./YouMayAlsoLike";
 
 const ICON_STROKE = 1.75;
-const QTY_MIN = 1;
-const QTY_MAX = 99;
-
-function clampQty(n) {
-  const x = Math.floor(Number(n));
-  if (Number.isNaN(x)) return QTY_MIN;
-  return Math.min(QTY_MAX, Math.max(QTY_MIN, x));
-}
 
 function formatUsd(value) {
   return value.toLocaleString("en-US", {
@@ -53,8 +48,10 @@ const TAB_BODY_CLASS =
  * @param {{ product: Record<string, unknown> }} props
  */
 export function ProductDetailPage({ product }) {
+  const dispatch = useAppDispatch();
   const p = product;
   const slug = String(p.slug ?? "");
+  const sku = String(p.sku ?? p.itemNumber ?? slug);
   const title = String(p.title ?? "");
   const brandDisplay = String(p.brandDisplay ?? p.vendor ?? "");
   const itemNumber = String(p.itemNumber ?? "");
@@ -88,16 +85,12 @@ export function ProductDetailPage({ product }) {
   /** Only show picker when there’s a real choice (0–1 options = hide). */
   const showSizePicker =
     Array.isArray(sizeOptions) && sizeOptions.length > 1;
-  const footerMode = p.footerMode === "quantity" ? "quantity" : "add";
 
   const [activeIdx, setActiveIdx] = useState(0);
   const [wishlisted, setWishlisted] = useState(false);
   const [selectedSize, setSelectedSize] = useState(defaultSize);
-  const [qty, setQty] = useState(1);
-  const [qtyInput, setQtyInput] = useState("1");
   const [tab, setTab] = useState("description");
   const [failedIdx, setFailedIdx] = useState(() => new Set());
-  const qtyFieldRef = useRef(null);
 
   const placeholderBg = useMemo(() => softPlaceholderBg(slug), [slug]);
 
@@ -105,18 +98,19 @@ export function ProductDetailPage({ product }) {
     setSelectedSize(defaultSize);
     setActiveIdx(0);
     setFailedIdx(new Set());
-    setQty(1);
-    setQtyInput("1");
     setTab("description");
   }, [slug, defaultSize]);
 
-  useEffect(() => {
-    const el = qtyFieldRef.current;
-    if (!el) return;
-    const onWheel = (e) => e.preventDefault();
-    el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
-  }, []);
+  const purchaseSizeKey = useMemo(
+    () => (showSizePicker ? selectedSize : "single"),
+    [showSizePicker, selectedSize],
+  );
+
+  const cartLine = useAppSelector((s) =>
+    s.cart.items.find(
+      (i) => i.sku === sku && i.purchaseSize === purchaseSizeKey,
+    ),
+  );
 
   const resolved = useMemo(
     () =>
@@ -132,10 +126,21 @@ export function ProductDetailPage({ product }) {
     [slug],
   );
 
-  function setQtyCommitted(next) {
-    const q = clampQty(next);
-    setQty(q);
-    setQtyInput(String(q));
+  function handleAddToCart() {
+    dispatch(
+      addToCartWithNotification({
+        sku,
+        slug,
+        title,
+        imageSrc: galleryImages[0] ?? "",
+        purchaseSize: purchaseSizeKey,
+        quantity: 1,
+        unitPrice: resolved.price,
+        unitLabel: resolved.unitPrice,
+        sizeOptions: showSizePicker ? sizeOptions : undefined,
+        priceBySize: priceBySize ?? undefined,
+      }),
+    );
   }
 
   const mainSrc = galleryImages[activeIdx] ?? "";
@@ -344,49 +349,26 @@ export function ProductDetailPage({ product }) {
               </div>
             ) : null}
 
-            <div className="mt-8 flex min-w-0 items-center gap-2">
-              {footerMode === "quantity" ? (
-                <div className="flex h-12 min-h-12 min-w-0 flex-1 items-center justify-between rounded-lg border border-neutral-200 bg-white px-1 sm:px-2">
+            <div className="mt-8 flex min-w-0 flex-wrap items-center gap-2">
+              {cartLine ? (
+                <div className="flex h-12 min-h-12 min-w-[220px] flex-1 items-center justify-between rounded-full border border-neutral-200 bg-white px-2 sm:min-w-0">
                   <button
                     type="button"
-                    className="inline-flex size-11 shrink-0 items-center justify-center rounded-md text-neutral-600 transition-colors hover:bg-neutral-100 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-40"
+                    className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-neutral-600 transition-colors hover:bg-neutral-100 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500"
                     aria-label="Decrease quantity"
-                    disabled={qty <= QTY_MIN}
-                    onClick={() => setQtyCommitted(qty - 1)}
+                    onClick={() => dispatch(decrementCartLine(cartLine.lineId))}
                   >
                     <Minus className="size-4" strokeWidth={2} aria-hidden />
                   </button>
-                  <input
-                    ref={qtyFieldRef}
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="off"
-                    aria-label="Quantity"
-                    value={qtyInput}
-                    onChange={(e) => {
-                      const v = e.target.value.replace(/\D/g, "");
-                      setQtyInput(v);
-                      if (v !== "") {
-                        const n = parseInt(v, 10);
-                        if (!Number.isNaN(n)) setQty(clampQty(n));
-                      }
-                    }}
-                    onBlur={() => {
-                      const n = parseInt(qtyInput, 10);
-                      const q =
-                        qtyInput === "" || Number.isNaN(n)
-                          ? QTY_MIN
-                          : clampQty(n);
-                      setQtyCommitted(q);
-                    }}
-                    className="min-w-[2.5rem] flex-1 bg-transparent text-center text-sm font-semibold tabular-nums text-neutral-900 outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                  />
+                  <span className="min-w-[2.5rem] flex-1 text-center text-sm font-bold tabular-nums text-neutral-900">
+                    {cartLine.quantity}
+                  </span>
                   <button
                     type="button"
-                    className="inline-flex size-11 shrink-0 items-center justify-center rounded-md text-neutral-600 transition-colors hover:bg-neutral-100 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-40"
+                    className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-neutral-600 transition-colors hover:bg-neutral-100 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-40"
                     aria-label="Increase quantity"
-                    disabled={qty >= QTY_MAX}
-                    onClick={() => setQtyCommitted(qty + 1)}
+                    disabled={cartLine.quantity >= 99}
+                    onClick={() => dispatch(incrementCartLine(cartLine.lineId))}
                   >
                     <Plus className="size-4" strokeWidth={2} aria-hidden />
                   </button>
@@ -395,6 +377,7 @@ export function ProductDetailPage({ product }) {
                 <button
                   type="button"
                   className="h-12 min-h-12 min-w-0 flex-1 rounded-lg bg-[#0f172a] text-sm font-bold uppercase tracking-wide text-white transition-colors hover:bg-[#1e293b] focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                  onClick={handleAddToCart}
                 >
                   Add
                 </button>

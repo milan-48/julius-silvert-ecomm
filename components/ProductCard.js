@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Heart, Minus, Plus } from "lucide-react";
 import { getPricingForSize } from "@/lib/productPricing";
+import { addToCartWithNotification } from "@/lib/store/cartThunks";
+import { decrementCartLine, incrementCartLine } from "@/lib/store/cartSlice";
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
 import { RequistionIcon } from "@/lib/icons";
 import { softPlaceholderBg } from "@/lib/softPlaceholderColor";
 
@@ -19,17 +22,9 @@ function formatUsd(value) {
 }
 
 const ICON_STROKE = 1.75;
-const QTY_MIN = 1;
-const QTY_MAX = 99;
-
-function clampQty(n) {
-  const x = Math.floor(Number(n));
-  if (Number.isNaN(x)) return QTY_MIN;
-  return Math.min(QTY_MAX, Math.max(QTY_MIN, x));
-}
 
 /**
- * Product tile — static data from constants; cart actions are UI-only until checkout exists.
+ * Product tile — Add adds to Redux cart + toast; then shows pill qty stepper.
  *
  * Image area uses a **button + router.push** (not an overlay `Link`) so iOS Safari hit-testing
  * doesn’t swallow taps meant for CASE/PC and quantity controls below.
@@ -37,6 +32,7 @@ function clampQty(n) {
  * @param {Record<string, { price: number; unitPrice: string; netWeight?: string }> | undefined} priceBySize
  */
 export function ProductCard({
+  sku,
   slug,
   imageSrc,
   imageAlt,
@@ -45,24 +41,15 @@ export function ProductCard({
   netWeight,
   price,
   unitPrice,
-  footerMode,
+  footerMode: _footerMode,
   sizeOptions,
   defaultSize,
   priceBySize,
 }) {
+  const dispatch = useAppDispatch();
   const router = useRouter();
-  const [qty, setQty] = useState(1);
-  const [qtyInput, setQtyInput] = useState("1");
-  const qtyFieldRef = useRef(null);
+  const lineSku = sku ?? slug;
   const [wishlisted, setWishlisted] = useState(false);
-
-  useEffect(() => {
-    const el = qtyFieldRef.current;
-    if (!el) return;
-    const onWheel = (e) => e.preventDefault();
-    el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
-  }, []);
 
   const [selectedSize, setSelectedSize] = useState(
     () => defaultSize ?? sizeOptions?.[0]?.value ?? "case",
@@ -75,11 +62,16 @@ export function ProductCard({
   const sizeCount = sizeOptions?.length ?? 0;
   const sizeOptionsScroll = sizeCount > 4;
 
-  function setQtyCommitted(next) {
-    const q = clampQty(next);
-    setQty(q);
-    setQtyInput(String(q));
-  }
+  const purchaseSizeKey = useMemo(
+    () => (sizeOptions && sizeOptions.length > 1 ? selectedSize : "single"),
+    [sizeOptions, selectedSize],
+  );
+
+  const cartLine = useAppSelector((s) =>
+    s.cart.items.find(
+      (i) => i.sku === lineSku && i.purchaseSize === purchaseSizeKey,
+    ),
+  );
 
   const resolved = useMemo(
     () =>
@@ -93,6 +85,24 @@ export function ProductCard({
   useEffect(() => {
     setImageFailed(false);
   }, [imageSrc]);
+
+  function handleFirstAdd(e) {
+    e.stopPropagation();
+    dispatch(
+      addToCartWithNotification({
+        sku: lineSku,
+        slug,
+        title,
+        imageSrc,
+        purchaseSize: purchaseSizeKey,
+        quantity: 1,
+        unitPrice: resolved.price,
+        unitLabel: resolved.unitPrice,
+        sizeOptions: sizeOptions?.length > 1 ? sizeOptions : undefined,
+        priceBySize: priceBySize ?? undefined,
+      }),
+    );
+  }
 
   return (
     <article className="flex h-full flex-col overflow-visible rounded-xl border border-neutral-200/90 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
@@ -210,77 +220,40 @@ export function ProductCard({
         </div>
 
         <div className="mt-auto flex min-w-0 touch-manipulation items-center gap-2 pt-3">
-          {footerMode === "quantity" ? (
-            <div className="flex h-11 min-h-11 min-w-0 flex-1 items-center justify-between rounded-lg border border-neutral-200 bg-white px-1 sm:h-10 sm:min-h-0 sm:px-2">
+          {cartLine ? (
+            <div className="flex h-11 min-h-11 min-w-0 flex-1 items-center justify-between rounded-full border border-neutral-200 bg-white px-1.5 sm:h-10 sm:min-h-0 sm:px-2">
               <button
                 type="button"
-                className="inline-flex size-11 shrink-0 items-center justify-center rounded-md text-neutral-600 transition-colors [-webkit-tap-highlight-color:transparent] hover:bg-neutral-100 hover:text-neutral-900 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 active:bg-neutral-100 disabled:opacity-40 sm:size-9"
+                className="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-neutral-600 transition-colors [-webkit-tap-highlight-color:transparent] hover:bg-neutral-100 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500"
                 aria-label="Decrease quantity"
-                disabled={qty <= QTY_MIN}
                 onClick={(e) => {
                   e.stopPropagation();
-                  setQtyCommitted(qty - 1);
+                  dispatch(decrementCartLine(cartLine.lineId));
                 }}
               >
-                <Minus
-                  className="size-[18px] sm:size-4"
-                  strokeWidth={2}
-                  aria-hidden
-                />
+                <Minus className="size-4" strokeWidth={2} aria-hidden />
               </button>
-              <input
-                ref={qtyFieldRef}
-                type="text"
-                inputMode="numeric"
-                autoComplete="off"
-                aria-label="Quantity"
-                value={qtyInput}
-                onChange={(e) => {
-                  const v = e.target.value.replace(/\D/g, "");
-                  setQtyInput(v);
-                  if (v !== "") {
-                    const n = parseInt(v, 10);
-                    if (!Number.isNaN(n)) setQty(clampQty(n));
-                  }
-                }}
-                onBlur={() => {
-                  const n = parseInt(qtyInput, 10);
-                  const q =
-                    qtyInput === "" || Number.isNaN(n)
-                      ? QTY_MIN
-                      : clampQty(n);
-                  setQtyCommitted(q);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                    e.preventDefault();
-                  }
-                }}
-                onClick={(e) => e.stopPropagation()}
-                className="min-h-11 min-w-[2rem] max-w-[3.5rem] flex-1 touch-manipulation bg-transparent text-center text-sm font-semibold tabular-nums text-neutral-900 outline-none [-webkit-tap-highlight-color:transparent] focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 sm:min-h-0"
-              />
+              <span className="min-w-[2rem] flex-1 text-center text-sm font-bold tabular-nums text-neutral-900">
+                {cartLine.quantity}
+              </span>
               <button
                 type="button"
-                className="inline-flex size-11 shrink-0 items-center justify-center rounded-md text-neutral-600 transition-colors [-webkit-tap-highlight-color:transparent] hover:bg-neutral-100 hover:text-neutral-900 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 active:bg-neutral-100 sm:size-9"
+                className="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-neutral-600 transition-colors [-webkit-tap-highlight-color:transparent] hover:bg-neutral-100 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-40"
                 aria-label="Increase quantity"
-                disabled={qty >= QTY_MAX}
+                disabled={cartLine.quantity >= 99}
                 onClick={(e) => {
                   e.stopPropagation();
-                  setQtyCommitted(qty + 1);
+                  dispatch(incrementCartLine(cartLine.lineId));
                 }}
               >
-                <Plus
-                  className="size-[18px] sm:size-4"
-                  strokeWidth={2}
-                  aria-hidden
-                />
+                <Plus className="size-4" strokeWidth={2} aria-hidden />
               </button>
             </div>
           ) : (
             <button
               type="button"
               className="h-11 min-h-11 min-w-0 flex-1 touch-manipulation rounded-lg bg-neutral-900 text-sm font-semibold tracking-tight text-white transition-colors [-webkit-tap-highlight-color:transparent] hover:bg-neutral-800 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 active:bg-neutral-800 sm:h-10 sm:min-h-0"
-              onClick={(e) => e.stopPropagation()}
+              onClick={handleFirstAdd}
             >
               ADD
             </button>

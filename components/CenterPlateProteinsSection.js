@@ -1,15 +1,14 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { ProductCard } from "./ProductCard";
-import {
-  CENTER_PLATE_PRODUCTS,
-  CENTER_PLATE_SECTION,
-} from "@/lib/constants";
+import { CENTER_PLATE_SECTION } from "@/lib/constants";
 
 /**
  * Homepage “Center of the Plate Proteins” — same responsive grid as `NewArrivalsSection`.
  */
-export function CenterPlateProteinsSection() {
+export function CenterPlateProteinsSection({ products = [] }) {
+  if (!products.length) return null;
+
   return (
     <section
       className="bg-white pt-10 pb-6 sm:pt-14 sm:pb-8 lg:pt-16 lg:pb-10"
@@ -38,9 +37,10 @@ export function CenterPlateProteinsSection() {
         </div>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
-          {CENTER_PLATE_PRODUCTS.map((p) => (
+          {products.map((p) => (
             <ProductCard
               key={p.id}
+              sku={p.sku}
               slug={p.slug}
               imageSrc={p.imageSrc}
               imageAlt={p.imageAlt}

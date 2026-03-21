@@ -7,6 +7,8 @@ import { Heart, ShoppingCart, UserRound, Menu, ChevronDown } from "lucide-react"
 import { SearchBar } from "./SearchBar";
 import { NavMegaMenuPanel } from "./NavMegaMenuPanel";
 import { NAV_LINKS, SPECIAL_NAV_LINK } from "@/lib/constants";
+import { openCartDrawer, selectCartCount } from "@/lib/store/cartSlice";
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
 
 /** Header utility icons: 20px mobile, 24px sm+ (Lucide grid stays sharp). */
 const ICON_STROKE = 1.75;
@@ -22,8 +24,9 @@ export function Header({
   mobileNavOpen,
   onMobileNavToggle,
   onMobileNavClose,
-  cartItemCount = 0,
 }) {
+  const dispatch = useAppDispatch();
+  const cartItemCount = useAppSelector(selectCartCount);
   const [desktopMegaId, setDesktopMegaId] = useState(null);
   const [mobileMegaId, setMobileMegaId] = useState(null);
   const leaveTimerRef = useRef(null);
@@ -107,14 +110,15 @@ export function Header({
                 aria-hidden
               />
             </Link>
-            <Link
-              href="#"
-              className="icon-hit relative"
+            <button
+              type="button"
+              className="icon-hit relative border-0 bg-transparent p-0"
               aria-label={
                 cartItemCount > 0
                   ? `Shopping cart, ${cartItemCount} items`
                   : "Shopping cart"
               }
+              onClick={() => dispatch(openCartDrawer())}
             >
               <ShoppingCart
                 strokeWidth={ICON_STROKE}
@@ -126,7 +130,7 @@ export function Header({
                   {cartItemCount > 99 ? "99+" : cartItemCount}
                 </span>
               ) : null}
-            </Link>
+            </button>
             <button
               type="button"
               onClick={onMobileNavToggle ?? (() => {})}

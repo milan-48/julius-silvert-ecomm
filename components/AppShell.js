@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { AppToaster } from "./AppToaster";
+import { CartDrawer } from "./CartDrawer";
+import { CatalogHydrator } from "./CatalogHydrator";
 import { Header } from "./Header";
 import { SiteFooter } from "./SiteFooter";
 
@@ -12,12 +15,15 @@ export function AppShell({ children }) {
 
   return (
     <div className="flex min-h-[100dvh] min-h-screen w-full max-w-full flex-col overflow-x-clip bg-white">
+      <CatalogHydrator />
       <Header
         mobileNavOpen={mobileNavOpen}
         onMobileNavToggle={() => setMobileNavOpen((o) => !o)}
         onMobileNavClose={() => setMobileNavOpen(false)}
       />
       <main className="flex w-full min-w-0 flex-1 flex-col">{children}</main>
+      <CartDrawer />
+      <AppToaster />
       <SiteFooter />
     </div>
   );
