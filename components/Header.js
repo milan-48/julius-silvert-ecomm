@@ -68,7 +68,7 @@ export function Header({
   const closeMobileNav = onMobileNavClose ?? (() => {});
 
   return (
-    <header className="bg-white shadow-[0_1px_0_rgba(15,23,42,0.04)]">
+    <header className="sticky top-0 z-50 bg-white shadow-[0_1px_0_rgba(15,23,42,0.04)]">
       <div className="site-container">
         <div className="flex items-center justify-between gap-3 py-3.5 sm:gap-6 sm:py-4">
           <Link
