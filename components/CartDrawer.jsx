@@ -254,7 +254,7 @@ export function CartDrawer() {
       >
         <header className="flex shrink-0 items-center gap-2 border-b border-neutral-200 px-3 py-3 sm:gap-3 sm:px-5 sm:py-4">
           <ShoppingBag
-            className="size-6 shrink-0 text-blue-600"
+            className="size-6 shrink-0 text-[#0f172a]"
             strokeWidth={1.75}
             aria-hidden
           />
