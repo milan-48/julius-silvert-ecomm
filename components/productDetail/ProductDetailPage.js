@@ -15,6 +15,8 @@ import { RequistionIcon } from "@/lib/icons";
 import { softPlaceholderBg } from "@/lib/softPlaceholderColor";
 import { addToCartWithNotification } from "@/lib/store/cartThunks";
 import { decrementCartLine, incrementCartLine } from "@/lib/store/cartSlice";
+import { selectWishlistHasSku } from "@/lib/store/wishlistSlice";
+import { persistToggleWishlistItem } from "@/lib/store/wishlistThunks";
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
 import { CartQuantityInput } from "@/components/CartQuantityInput";
 import { YouMayAlsoLike } from "./YouMayAlsoLike";
@@ -94,7 +96,6 @@ export function ProductDetailPage({ product }) {
     Array.isArray(sizeOptions) && sizeOptions.length > 1;
 
   const [activeIdx, setActiveIdx] = useState(0);
-  const [wishlisted, setWishlisted] = useState(false);
   const [selectedSize, setSelectedSize] = useState(defaultSize);
   const [tab, setTab] = useState("description");
   const [failedIdx, setFailedIdx] = useState(() => new Set());
@@ -118,6 +119,7 @@ export function ProductDetailPage({ product }) {
       (i) => i.sku === sku && i.purchaseSize === purchaseSizeKey,
     ),
   );
+  const inWishlist = useAppSelector(selectWishlistHasSku(sku));
 
   const resolved = useMemo(
     () =>
@@ -241,14 +243,31 @@ export function ProductDetailPage({ product }) {
               <button
                 type="button"
                 className="absolute right-3 top-3 z-10 flex size-11 items-center justify-center rounded-full bg-white/95 text-neutral-800 shadow-sm ring-1 ring-black/[0.06] transition-colors hover:bg-white focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500"
-                aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-                aria-pressed={wishlisted}
-                onClick={() => setWishlisted((w) => !w)}
+                aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
+                aria-pressed={inWishlist}
+                onClick={() =>
+                  void dispatch(
+                    persistToggleWishlistItem({
+                      sku,
+                      slug,
+                      title,
+                      imageSrc: galleryImages[0] ?? "",
+                      imageAlt: galleryAlts[0] ?? title,
+                      vendor: brandDisplay,
+                      defaultSize: selectedSize,
+                      sizeOptions: showSizePicker ? sizeOptions : undefined,
+                      priceBySize,
+                      price,
+                      unitPrice,
+                      netWeight,
+                    }),
+                  )
+                }
               >
                 <Heart
                   size={20}
                   strokeWidth={ICON_STROKE}
-                  className={wishlisted ? "fill-red-500 text-red-500" : ""}
+                  className={inWishlist ? "fill-red-500 text-red-500" : ""}
                   aria-hidden
                 />
               </button>

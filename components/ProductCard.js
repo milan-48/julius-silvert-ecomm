@@ -8,6 +8,8 @@ import { Heart, Minus, Plus } from "lucide-react";
 import { getPricingForSize } from "@/lib/productPricing";
 import { addToCartWithNotification } from "@/lib/store/cartThunks";
 import { decrementCartLine, incrementCartLine } from "@/lib/store/cartSlice";
+import { selectWishlistHasSku } from "@/lib/store/wishlistSlice";
+import { persistToggleWishlistItem } from "@/lib/store/wishlistThunks";
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
 import { CartQuantityInput } from "@/components/CartQuantityInput";
 import { RequistionIcon } from "@/lib/icons";
@@ -65,7 +67,7 @@ export function ProductCard({
   const dispatch = useAppDispatch();
   const router = useRouter();
   const lineSku = sku ?? slug;
-  const [wishlisted, setWishlisted] = useState(false);
+  const inWishlist = useAppSelector(selectWishlistHasSku(lineSku));
 
   const [selectedSize, setSelectedSize] = useState(
     () => defaultSize ?? sizeOptions?.[0]?.value ?? "case",
@@ -214,17 +216,33 @@ export function ProductCard({
         <button
           type="button"
           className="absolute right-2 top-2 z-10 flex size-10 touch-manipulation items-center justify-center rounded-full bg-white/95 text-neutral-800 shadow-sm ring-1 ring-black/[0.06] [-webkit-tap-highlight-color:transparent] transition-colors hover:bg-white focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-500 sm:size-9"
-          aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-          aria-pressed={wishlisted}
+          aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
+          aria-pressed={inWishlist}
           onClick={(e) => {
             e.stopPropagation();
-            setWishlisted((w) => !w);
+            void dispatch(
+              persistToggleWishlistItem({
+                sku: lineSku,
+                slug,
+                title,
+                imageSrc,
+                imageAlt: imageAlt ?? title,
+                vendor,
+                defaultSize: selectedSize,
+                sizeOptions:
+                  sizeOptions && sizeOptions.length > 1 ? sizeOptions : undefined,
+                priceBySize,
+                price,
+                unitPrice,
+                netWeight,
+              }),
+            );
           }}
         >
           <Heart
             size={18}
             strokeWidth={ICON_STROKE}
-            className={wishlisted ? "fill-red-500 text-red-500" : ""}
+            className={inWishlist ? "fill-red-500 text-red-500" : ""}
             aria-hidden
           />
         </button>

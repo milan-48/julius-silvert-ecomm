@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AppToaster } from "./AppToaster";
 import { CartDrawer } from "./CartDrawer";
 import { CartPersistence } from "./CartPersistence";
+import { WishlistPersistence } from "./WishlistPersistence";
 import { CatalogHydrator } from "./CatalogHydrator";
 import { Header } from "./Header";
 import { SiteFooter } from "./SiteFooter";
@@ -18,6 +19,7 @@ export function AppShell({ children }) {
     <div className="flex min-h-[100dvh] min-h-screen w-full max-w-full flex-col overflow-x-clip bg-white">
       <CatalogHydrator />
       <CartPersistence />
+      <WishlistPersistence />
       <Header
         mobileNavOpen={mobileNavOpen}
         onMobileNavToggle={() => setMobileNavOpen((o) => !o)}

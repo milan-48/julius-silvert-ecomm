@@ -123,7 +123,7 @@ export function Header({
           </div>
 
           <div className="flex shrink-0 items-center justify-end gap-0 sm:gap-1">
-            <Link href="#" className="icon-hit" aria-label="Wishlist">
+            <Link href="/wishlist" className="icon-hit" aria-label="Wishlist">
               <Heart
                 strokeWidth={ICON_STROKE}
                 className="size-5 shrink-0 sm:size-6"
